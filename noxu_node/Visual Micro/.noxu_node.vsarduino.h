@@ -31,16 +31,9 @@ extern "C" void __cxa_pure_virtual() {;}
 
 //
 //
+void receive(byte type, byte* data);
 long readNetworkId();
 void writeNetworkId(unsigned short &networkId);
-void startListen();
-void stopListen();
-void receive();
-void process(byte message[16], byte type, byte data[]);
-void* sendMessage(byte type, void* data);
-void send(unsigned short node, byte message[]);
-bool isBitSet (byte b, int n);
-byte setBit(byte b, byte n, bool on);
 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard\pins_arduino.h" 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
