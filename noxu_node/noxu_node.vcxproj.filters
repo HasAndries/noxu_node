@@ -21,5 +21,19 @@
     <ClInclude Include="Visual Micro\.noxu_node.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RF24.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RF24_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nRF24L01.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RF24.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

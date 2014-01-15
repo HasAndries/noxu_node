@@ -7,32 +7,38 @@ const struct {
     int networkId;
 } eepromLocation = { 0 };
 
+//---------- instructions ----------
 typedef enum {
     REQ_COMMAND = 0, RES_COMMAND = 100,
-    REQ_NETWORKID = 1, REQ_NETWORKID = 101
+    REQ_NETWORKID = 1, RES_NETWORKID = 101
 } instructions;
+//---------- endpoint ----------
 typedef struct{
     byte channel;
     byte id;
-    unsigned long pipe;
+    uint64_t pipe;
 } endpoint;
+//---------- message ----------
 typedef struct{
     byte *buffer;
     byte control;
     bool fromCommander;
     instructions instruction;
     byte *data;
+	byte hopCount;
     byte *hops;
     byte lastHop;
 } message;
-const unsigned long basePipe = 0xF0F0F0F000;
-const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F000 };
+//---------- settings ----------
+const uint64_t basePipe = 0xF0F0F0F000LL;
+const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F000LL };
 const unsigned int runInterval = 1000;
 const unsigned int receiveDuration = 1000;
 
 class RFNode{
 private:
-    RF24 radio;
+	//---------- properties ----------
+    RF24 *radio;
     unsigned long lastRun;
     bool listening;
     bool discovering;
@@ -50,102 +56,100 @@ private:
     //---------- startListen ----------
     void startListen(){
         //todo: set channel
-        radio.openReadingPipe(1, epBroadcast.pipe);
+        (*radio).openReadingPipe(1, epBroadcast.pipe);
         if (hasCommander)
-            radio.openReadingPipe(2, epCommander.pipe);
-        radio.startListening();
+            (*radio).openReadingPipe(2, epCommander.pipe);
+        (*radio).startListening();
         listening = true;
     }
     //---------- stopListen ----------
     void stopListen(){
-        radio.stopListening();
+        (*radio).stopListening();
         listening = false;
     }
     //---------- receive ----------
     void receive(){
         uint8_t pipe;
-        if (radio.available(&pipe)){
-            message msg;
-            msg.buffer[16];
-            if (radio.read(&msg.buffer, 16)) {
-                if (epBroadcast.pipe == pipe) receiveBroadcast(msg.buffer);
-                else if (hasCommander && epCommander.pipe == pipe) receiveCommander(msg.buffer);
+        if ((*radio).available(&pipe)){
+            byte buffer[16];
+            if ((*radio).read(&buffer, 16)) {
+				message msg = buildMessage(buffer);
+                if (epBroadcast.pipe == pipe) receiveBroadcast(msg);
+                else if (hasCommander && epCommander.pipe == pipe) receiveCommander(msg);
             }
         }
     }
     //---------- receiveBroadcast ----------
-    void receiveBroadcast(byte* buffer) {
+    void receiveBroadcast(message msg) {
 
     }
     //---------- receiveCommander ----------
-    void receiveCommander(byte* buffer){
-        bool fromCommander;
-        instructions instruction;
-        byte *data, *hops, lastHop;
-        message msg;
-        buildMessage(buffer, &msg);
-
-        //header
-        //byte control = message[0];
-        //bool fromCommander = isBitSet(control, 0);
-        //byte type = message[1];
-        ////data
-        //byte *dataPtr = &message[0] + 2;
-        //byte dataLength = *dataPtr;
-        //void *data = malloc(sizeof(byte) * dataLength);
-        //data = dataPtr+1;
-        ////hops
-        //byte *hopPtr = dataPtr + 1 + sizeof(byte) * dataLength;
-        //byte hopCount = *hopPtr;
-        //void *hops = malloc(sizeof(byte) * hopCount);
-        //hops = hopPtr + 1;
-        //short lastHop = ((byte*)hops)[hopCount-1];
-
-        if (fromCommander && lastHop == epDevice.id){//message is for this node
-            process(buffer, instruction, (byte*)data);
+	void receiveCommander(message msg){
+        if (msg.fromCommander && msg.lastHop == epDevice.id){//message is for this node
+            process(msg);
         }
-        else if (fromCommander && hopCount > 0){//message is routed through this node
+        else if (msg.fromCommander && msg.hopCount > 0){//message is routed back through this node
             //remove last hop and forward message to next hop
-            hopCount--;
-            *hopPtr = hopCount;
-            byte lastHop = ((byte*)hops)[hopCount-1];
-            send(lastHop, buffer);
+            msg.hopCount--;
+            byte lastHop = ((byte*)msg.hops)[msg.hopCount-1];
+            sendMessage(lastHop, msg);
         }
-        else if (fromCommander){//big problem, maybe send out notification?
+        else if (msg.fromCommander){//big problem, maybe send out notification?
         }
-        else if (!fromCommander){//forward message onto commander
-            byte *newHopPtr = hopPtr + 1 + sizeof(byte) * hopCount;
-            hopCount++;
-            *hopPtr = 1;
-            *(newHopPtr) = *(&NetworkId.device);
+        else if (!msg.fromCommander){//forward message onto commander
+			//add current node id and send to commander
+            addMessageHop(msg, epDevice.id);
+			sendMessage(epCommander.id, msg);
         }
     }
     //---------- dissectMessage ----------
-    void buildMessage(byte *buffer, message *msg){
+    message buildMessage(byte *buffer){
+		message msg;
+		msg.buffer = buffer;
         //header
-        byte control = buffer[0];
-        (*msg).fromCommander = isBitSet(control, 0);
-        (*msg).instruction = (instructions)buffer[1];
+        msg.control = buffer[0];
+        msg.fromCommander = isBitSet(msg.control, 0);
+        msg.instruction = (instructions)buffer[1];
         //data
         byte *dataPtr = &buffer[0] + 2;
         byte dataLength = *dataPtr;
         void *data = malloc(sizeof(byte) * dataLength);
-        data = dataPtr+1;
+        msg.data = (byte*)dataPtr+1;
         //hops
         byte *hopPtr = dataPtr + 1 + sizeof(byte) * dataLength;
-        byte hopCount = *hopPtr;
-        void *hops = malloc(sizeof(byte) * hopCount);
-        hops = hopPtr + 1;
-        *lastHop = ((byte*)hops)[hopCount-1];
+        msg.hopCount = *hopPtr;
+        void *hops = malloc(sizeof(byte) * msg.hopCount);
+        msg.hops = (byte*)hopPtr + 1;
+        msg.lastHop = ((byte*)hops)[msg.hopCount-1];
+		return msg;
     }
+	//---------- rebuildBuffer ----------
+	void rebuildBuffer(message msg){
+		msg.buffer[0] = setBit(msg.buffer[0], 0, msg.fromCommander);//fromCommander
+		msg.buffer[1] = msg.instruction;
+		//data
+		msg.buffer[2] = sizeof(msg.data);
+		for(byte ct=0;ct<msg.buffer[2];ct++)
+			msg.buffer[2+ct] = msg.data[ct];
+		//hops
+		byte hopIndex = 3+msg.buffer[2];
+		msg.buffer[hopIndex] = msg.hopCount;
+		for(byte ct=0;ct<msg.hopCount;ct++)
+			msg.buffer[hopIndex+1+ct] = msg.hops[ct];
+	}
+	void addMessageHop(message msg, byte id){
+		msg.hopCount++;
+		realloc(msg.hops, sizeof(byte) * msg.hopCount);
+		msg.hops[msg.hopCount-1] = id;
+	}
     //---------- process ----------
-    void process(byte message[16], instructions instruction, byte data[]){
-        switch (instruction)
+    void process(message msg){
+        switch (msg.instruction)
         {
         case RES_COMMAND:
             if (!hasCommander){
-                epCommander.id = data[0];
-                epCommander.pipe = basePipe+data[0];
+                epCommander.id = msg.data[0];
+                epCommander.pipe = basePipe+msg.data[0];
             }
             break;
         case REQ_COMMAND:
@@ -155,43 +159,25 @@ private:
         default:
             break;
         }
-        (*receiveHandler)(instruction, data);
+        (*receiveHandler)(msg.instruction, msg.data);
     }
-    //---------- send ----------
-    void sendData(endpoint ep, byte message[]) {
+    //---------- sendBuffer ----------
+	void sendBuffer(uint64_t pipe, byte buffer[]) {
         bool wasListening = listening;
         if (listening)
             stopListen();
 
         //todo: set channel
-        radio.openWritingPipe((unsigned long)ep.pipe);
-        radio.write(message, sizeof(message));
+        (*radio).openWritingPipe(pipe);
+        (*radio).write(buffer, sizeof(buffer));
 
         if (wasListening)
             startListen();
     }
     //---------- sendMessage ----------
-    void* sendMessage(byte type, void* data){
-        //construct message
-        //header
-        byte message[16];
-        message[0] = setBit(message[0], 0, false);//fromCommander=false
-
-        //data
-        byte dataSize = sizeof(data);
-        message[1] = dataSize;
-        for(byte ct=0;ct<dataSize;ct++){
-            message[2+ct] = ((byte*)data)[ct];
-        }
-
-        //hops
-        byte* hopPtr = &message[2+dataSize];
-        *hopPtr = 1;
-        *(hopPtr+1) = *(&NetworkId.device);
-        *(hopPtr+2) = *(&NetworkId.device+1);
-
-        //send new message
-        send(NetworkId.command, message);
+    void* sendMessage(byte dest, message msg){
+		rebuildBuffer(msg);
+		sendBuffer(basePipe+dest, msg.buffer);
     }
     //---------- isBitSet ----------
     bool isBitSet (byte b, int n) {
@@ -208,17 +194,20 @@ private:
     }
 protected:
 public:
+	RFNode(){
+		
+	}
     //---------- setup ----------
     void setup(){
         listening = false;
         discovering = false;
         hasCommander = false;
 
-        radio = RF24(9, 10);
-        radio.begin();
-        radio.setRetries(15,15);
-        radio.setPayloadSize(16);
-        radio.printDetails();
+        radio = &RF24(9, 10);
+        (*radio).begin();
+        (*radio).setRetries(15,15);
+        (*radio).setPayloadSize(16);
+        (*radio).printDetails();
     }
     //---------- loop ----------
     void loop(){
@@ -240,15 +229,19 @@ public:
     unsigned long diff(unsigned long a, unsigned long b){
         if (a > b) return abs(a - b);
         else return abs(b - a);
-
     }
     //---------- setReceiveHandler ----------
     void setReceiveHandler(void (*f)(byte, byte*)){
         receiveHandler = *f;
     }
     //---------- send ----------
-    void send(byte command, void* data){
-
+    void send(byte instruction, void* data){
+		byte buffer[16];
+		message msg = buildMessage(buffer);
+		msg.instruction = (instructions)instruction;
+		msg.data = (byte*)data;
+		addMessageHop(msg, epDevice.id);
+		sendMessage(epCommander.id, msg);
     }
 };
 
