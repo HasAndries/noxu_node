@@ -30,6 +30,9 @@
     <ClInclude Include="nRF24L01.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="printf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RF24.cpp">

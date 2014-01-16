@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
+#include "printf.h"
 
 const struct { 
     int networkId;
@@ -9,7 +10,7 @@ const struct {
 
 //---------- instructions ----------
 typedef enum {
-    REQ_COMMAND = 0, RES_COMMAND = 100,
+    REQ_COMMAND = 0, RES_COMMAND = 100,//broadcast
     REQ_NETWORKID = 1, RES_NETWORKID = 101
 } instructions;
 //---------- endpoint ----------
@@ -25,9 +26,10 @@ typedef struct{
     bool fromCommander;
     instructions instruction;
     byte *data;
-	byte hopCount;
+    byte hopCount;
     byte *hops;
     byte lastHop;
+    bool freed;
 } message;
 //---------- settings ----------
 const uint64_t basePipe = 0xF0F0F0F000LL;
@@ -37,24 +39,19 @@ const unsigned int receiveDuration = 1000;
 
 class RFNode{
 private:
-	//---------- properties ----------
+    //---------- properties ----------
     RF24 *radio;
+    int tempId;
     unsigned long lastRun;
     bool listening;
-    bool discovering;
     bool hasCommander;
     endpoint epCommander;
     endpoint epDevice;
     void (*receiveHandler)(byte, byte[]);
 
-    //---------- discover ----------
-    void discover(){
-    }
-    //---------- getNetworkId ----------
-    void getNetworkId(){
-    }
     //---------- startListen ----------
     void startListen(){
+        printf("Start Listen\n");
         //todo: set channel
         (*radio).openReadingPipe(1, epBroadcast.pipe);
         if (hasCommander)
@@ -64,6 +61,7 @@ private:
     }
     //---------- stopListen ----------
     void stopListen(){
+        printf("Stop Listen\n");
         (*radio).stopListening();
         listening = false;
     }
@@ -71,20 +69,43 @@ private:
     void receive(){
         uint8_t pipe;
         if ((*radio).available(&pipe)){
-            byte buffer[16];
+            byte buffer[16] = { 0 };
             if ((*radio).read(&buffer, 16)) {
-				message msg = buildMessage(buffer);
+                message msg = buildMessage(buffer);
+                printf("Received message %d:%x\n", msg.instruction, msg.buffer);
                 if (epBroadcast.pipe == pipe) receiveBroadcast(msg);
                 else if (hasCommander && epCommander.pipe == pipe) receiveCommander(msg);
+                freeMessage(msg);
             }
         }
     }
     //---------- receiveBroadcast ----------
     void receiveBroadcast(message msg) {
-
+        switch (msg.instruction)
+        {
+        case REQ_COMMAND:
+            if (hasCommander){
+                //respond with this device as commander
+                int tempId = msg.data[0];
+                realloc(msg.data, sizeof(int) + sizeof(msg.data));
+                msg.instruction = RES_COMMAND;
+                sendMessage(epBroadcast.id, msg);
+            }
+            break;
+        case RES_COMMAND:
+            if (!hasCommander){
+                hasCommander = true;
+                epCommander.id = msg.data[0];
+                epCommander.pipe = basePipe+msg.data[0];
+            }
+            break;
+        default:
+            break;
+        }
+        (*receiveHandler)(msg.instruction, msg.data);
     }
     //---------- receiveCommander ----------
-	void receiveCommander(message msg){
+    void receiveCommander(message msg){
         if (msg.fromCommander && msg.lastHop == epDevice.id){//message is for this node
             process(msg);
         }
@@ -97,15 +118,36 @@ private:
         else if (msg.fromCommander){//big problem, maybe send out notification?
         }
         else if (!msg.fromCommander){//forward message onto commander
-			//add current node id and send to commander
+            //add current node id and send to commander
             addMessageHop(msg, epDevice.id);
-			sendMessage(epCommander.id, msg);
+            sendMessage(epCommander.id, msg);
         }
     }
-    //---------- dissectMessage ----------
+    //---------- process ----------
+    void process(message msg){
+        switch (msg.instruction)
+        {
+        case RES_NETWORKID:
+            epDevice.id = msg.data[0];
+            break;
+        default:
+            break;
+        }
+        (*receiveHandler)(msg.instruction, msg.data);
+    }
+    //---------- buildMessage ----------
+    void freeMessage(message msg){
+        //todo free all memory for the message
+        if (msg.freed)
+            return;
+        free(msg.hops);
+        free(msg.data);
+        free(msg.buffer);
+    }
+    //---------- buildMessage ----------
     message buildMessage(byte *buffer){
-		message msg;
-		msg.buffer = buffer;
+        message msg;
+        msg.buffer = buffer;
         //header
         msg.control = buffer[0];
         msg.fromCommander = isBitSet(msg.control, 0);
@@ -113,56 +155,45 @@ private:
         //data
         byte *dataPtr = &buffer[0] + 2;
         byte dataLength = *dataPtr;
-        void *data = malloc(sizeof(byte) * dataLength);
-        msg.data = (byte*)dataPtr+1;
+        if (dataLength == 0) msg.data = NULL;
+        else msg.data = (byte*)malloc(sizeof(byte) * dataLength);
+        for(byte ct=0;ct<dataLength;ct++)
+            msg.data[ct] = dataPtr[1 + ct];
         //hops
         byte *hopPtr = dataPtr + 1 + sizeof(byte) * dataLength;
         msg.hopCount = *hopPtr;
-        void *hops = malloc(sizeof(byte) * msg.hopCount);
-        msg.hops = (byte*)hopPtr + 1;
-        msg.lastHop = ((byte*)hops)[msg.hopCount-1];
-		return msg;
+        msg.hops = (byte*)malloc(sizeof(byte) * msg.hopCount);
+        for(byte ct=0;ct<msg.hopCount;ct++)
+            msg.hops[ct] = hopPtr[1 + ct];
+        msg.lastHop = msg.hops[msg.hopCount-1];
+        free(hopPtr);
+        free(dataPtr);
+        return msg;
     }
-	//---------- rebuildBuffer ----------
-	void rebuildBuffer(message msg){
-		msg.buffer[0] = setBit(msg.buffer[0], 0, msg.fromCommander);//fromCommander
-		msg.buffer[1] = msg.instruction;
-		//data
-		msg.buffer[2] = sizeof(msg.data);
-		for(byte ct=0;ct<msg.buffer[2];ct++)
-			msg.buffer[2+ct] = msg.data[ct];
-		//hops
-		byte hopIndex = 3+msg.buffer[2];
-		msg.buffer[hopIndex] = msg.hopCount;
-		for(byte ct=0;ct<msg.hopCount;ct++)
-			msg.buffer[hopIndex+1+ct] = msg.hops[ct];
-	}
-	void addMessageHop(message msg, byte id){
-		msg.hopCount++;
-		realloc(msg.hops, sizeof(byte) * msg.hopCount);
-		msg.hops[msg.hopCount-1] = id;
-	}
-    //---------- process ----------
-    void process(message msg){
-        switch (msg.instruction)
-        {
-        case RES_COMMAND:
-            if (!hasCommander){
-                epCommander.id = msg.data[0];
-                epCommander.pipe = basePipe+msg.data[0];
-            }
-            break;
-        case REQ_COMMAND:
-            if (hasCommander){
-                //todo respond with commander details
-            }
-        default:
-            break;
-        }
-        (*receiveHandler)(msg.instruction, msg.data);
+    //---------- rebuildBuffer ----------
+    void rebuildBuffer(message msg){
+        msg.buffer[0] = setBit(msg.buffer[0], 0, msg.fromCommander);//fromCommander
+        msg.buffer[1] = msg.instruction;
+        //data
+        msg.buffer[2] = sizeof(msg.data);
+        for(byte ct=0;ct<msg.buffer[2];ct++)
+            msg.buffer[2+ct] = msg.data[ct];
+        //hops
+        byte hopIndex = 3+msg.buffer[2];
+        msg.buffer[hopIndex] = msg.hopCount;
+        for(byte ct=0;ct<msg.hopCount;ct++)
+            msg.buffer[hopIndex+1+ct] = msg.hops[ct];
+    }
+    //---------- addMessageHop ----------
+    void addMessageHop(message msg, byte id){
+        printf("addMessageHop - hopCount:%d", msg.hopCount);
+        msg.hopCount++;
+        realloc(msg.hops, sizeof(byte) * msg.hopCount);
+        msg.hops[msg.hopCount-1] = id;
+        printf(" -> hopCount:%d\r\n", msg.hopCount);
     }
     //---------- sendBuffer ----------
-	void sendBuffer(uint64_t pipe, byte buffer[]) {
+    void sendBuffer(uint64_t pipe, byte buffer[]) {
         bool wasListening = listening;
         if (listening)
             stopListen();
@@ -176,8 +207,11 @@ private:
     }
     //---------- sendMessage ----------
     void* sendMessage(byte dest, message msg){
-		rebuildBuffer(msg);
-		sendBuffer(basePipe+dest, msg.buffer);
+        rebuildBuffer(msg);
+        printf("sendMessage  - instruction:%d dataLength:%d data:%x hopCount:%d\r\n", msg.instruction, sizeof(msg.data), *msg.data);
+        printf("sendMessage -  buffer:");
+        printBytes(msg.buffer);
+        sendBuffer(basePipe+dest, msg.buffer);
     }
     //---------- isBitSet ----------
     bool isBitSet (byte b, int n) {
@@ -192,16 +226,24 @@ private:
         else
             return isBitSet(b, n) ? b ^= mask[n] : b;
     }
+    //---------- setBit ----------
+    void resetDeviceId(){
+        epDevice.id = 0;
+        epDevice.pipe = 0;
+        hasCommander = false;
+        tempId = random(1000000000, 2147483647);
+    }
 protected:
 public:
-	RFNode(){
-		
-	}
+    RFNode(){
+
+    }
     //---------- setup ----------
     void setup(){
         listening = false;
-        discovering = false;
         hasCommander = false;
+        randomSeed(analogRead(0));
+        resetDeviceId();
 
         radio = &RF24(9, 10);
         (*radio).begin();
@@ -216,14 +258,17 @@ public:
         if (diff(lastRun, now) >= 1000)
             shouldRun = true;
 
-        if (shouldRun || discovering){//run that shit!
+        if (shouldRun || !hasCommander){//run that shit!
             lastRun = now;
-            if (!hasCommander && !discovering) discovering = true;
             startListen();
             while(diff(now, millis()) < receiveDuration){
                 receive();
             }
             stopListen();
+            if (!hasCommander){
+                printf("Broadcast discover command\r\n");
+                send(REQ_COMMAND, &tempId);
+            }
         }
     }
     unsigned long diff(unsigned long a, unsigned long b){
@@ -236,19 +281,30 @@ public:
     }
     //---------- send ----------
     void send(byte instruction, void* data){
-		byte buffer[16];
-		message msg = buildMessage(buffer);
-		msg.instruction = (instructions)instruction;
-		msg.data = (byte*)data;
-		addMessageHop(msg, epDevice.id);
-		sendMessage(epCommander.id, msg);
+        byte buffer[16] = { 0 };
+        message msg = buildMessage(buffer);
+        printf("send buffer:");
+        printBytes(buffer);
+        printf("send msg.buffer:");
+        printBytes(msg.buffer);
+        msg.instruction = (instructions)instruction;
+        msg.data = (byte*)data;
+        addMessageHop(msg, epDevice.id);
+        sendMessage(epCommander.id, msg);
+        freeMessage(msg);
     }
 };
 
 RFNode node;
 
+void printBytes(byte* ptr){
+    for(int ct=0;ct<sizeof(ptr);ct++) printf("%d", ptr[ct]);
+    printf("\r\n");
+}
 void setup() {
     Serial.begin(57600);
+    printf_begin();
+    printf("setup\r\n");
     node = RFNode();
     node.setup();
     node.setReceiveHandler(receive);
