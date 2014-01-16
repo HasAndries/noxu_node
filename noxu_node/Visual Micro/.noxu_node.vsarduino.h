@@ -29,12 +29,9 @@
 typedef unsigned char byte;
 extern "C" void __cxa_pure_virtual() {;}
 
-void printBytes(byte* ptr);
 //
 //
 void receive(byte type, byte* data);
-long readNetworkId();
-void writeNetworkId(unsigned short &networkId);
 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard\pins_arduino.h" 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
@@ -42,6 +39,11 @@ void writeNetworkId(unsigned short &networkId);
 #include "C:\projects\noxu\noxu_node\RF24.cpp"
 #include "C:\projects\noxu\noxu_node\RF24.h"
 #include "C:\projects\noxu\noxu_node\RF24_config.h"
+#include "C:\projects\noxu\noxu_node\commandMessage.c"
+#include "C:\projects\noxu\noxu_node\commandMessage.h"
+#include "C:\projects\noxu\noxu_node\commandNetwork.c"
+#include "C:\projects\noxu\noxu_node\commandNetwork.h"
+#include "C:\projects\noxu\noxu_node\common.h"
 #include "C:\projects\noxu\noxu_node\nRF24L01.h"
 #include "C:\projects\noxu\noxu_node\printf.h"
 #endif
