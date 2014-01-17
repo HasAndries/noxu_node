@@ -26,8 +26,8 @@ CommandMessage::CommandMessage(byte *buffer){
 CommandMessage::~CommandMessage(){
     if (freed)
         return;
-    delete hops;
-    delete data;
+    free(hops);
+    free(data);
     freed = true;
 }
 

@@ -4,7 +4,7 @@ class CommandNetwork{
     private:
     //---------- properties ----------
     RF24 *radio;
-    int tempId;
+	uint16_t tempId;
     unsigned long lastRun;
     bool listening;
     bool hasCommander;
@@ -12,23 +12,25 @@ class CommandNetwork{
     endpoint epDevice;
     void (*receiveHandler)(byte, byte[]);
 
-    //---------- startListen ----------
+	byte** sendQueue;
+	uint64_t sendQueueLength;
+	byte** broadcastQueue;
+	uint64_t** broadcastQueueLength;
+
+	//---------- inbound ----------
     void startListen();
-    //---------- stopListen ----------
     void stopListen();
-    //---------- receive ----------
     void receive();
-    //---------- receiveBroadcast ----------
     void receiveBroadcast(CommandMessage msg);
-    //---------- receiveCommander ----------
-    void receiveCommander(CommandMessage msg);
-    //---------- process ----------
-    void process(CommandMessage msg);
-    //---------- sendBuffer ----------
+    void receiveCommand(CommandMessage msg);
+	
+	//---------- outbound ----------
+	byte* queueMessage(byte **queue, uint64_t queueLength, CommandMessage msg);
+	byte* dequeueMessage(byte **queue, uint64_t queueLength);
     void sendBuffer(uint64_t pipe, byte buffer[]);
-    //---------- sendMessage ----------
     void* sendMessage(byte dest, CommandMessage msg);
-    //---------- setBit ----------
+
+	//---------- other ----------
     void resetDeviceId();
 protected:
 public:
