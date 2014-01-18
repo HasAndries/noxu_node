@@ -18,7 +18,9 @@ unsigned long diff(unsigned long a, unsigned long b){
     else return abs(b - a);
 }
 //---------- printing ----------
-void printBytes(byte* ptr, byte length){
-    for(int ct=0;ct<length;ct++) printf("%d", ptr[ct]);
+void printBytes(byte* ptr, int length){
+    for(int ct=0;ct<length;ct++){
+        printf("%d", ptr[ct]);
+    }
     printf("\r\n");
 }

@@ -152,8 +152,8 @@ void CommandNetwork::setup(){
 
 	radio = new RF24(9, 10);
 	radio->begin();
-    radio->setChannel(40);
-    radio->setRetries(0,0);
+    radio->setChannel(3);
+    radio->setRetries(10,10);
 	radio->setPayloadSize(bufferSize);
 	radio->setAutoAck(true);
 	radio->setAutoAck(epBroadcast.pipe, false);
@@ -186,12 +186,12 @@ void CommandNetwork::setReceiveHandler(void (*f)(byte, byte*)){
 	receiveHandler = *f;
 }
 void CommandNetwork::broadcast(byte instruction, void* data, byte byteLength){
-    CommandMessage *msg = new CommandMessage(instruction, data, byteLength);
+    CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
     queueMessage(broadcastQueue, &broadcastQueueLength, msg);
 	delete msg;
 }
 void CommandNetwork::command(byte instruction, void* data, byte byteLength){
-	CommandMessage *msg = new CommandMessage(instruction, data, byteLength);
+	CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
     queueMessage(commandQueue, &commandQueueLength, msg);
 	delete msg;
 }

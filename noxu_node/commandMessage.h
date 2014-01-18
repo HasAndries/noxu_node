@@ -9,6 +9,7 @@ class CommandMessage{
 private:
     //---------- properties ----------
     bool freed;
+    void init();
 protected:
 public:
     //---------- properties ----------
@@ -22,7 +23,7 @@ public:
     byte *hops;
     byte lastHop;
 
-    CommandMessage(byte instruction, void *_data, byte byteLength);
+    CommandMessage(byte instruction, void *_data, byte byteLength, byte _bufferSize);
     CommandMessage(byte *buffer, byte _bufferSize);
     ~CommandMessage();
 

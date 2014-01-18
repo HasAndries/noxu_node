@@ -1,41 +1,56 @@
 #include "commandMessage.h"
 
 //========== PRIVATE ==========
+void CommandMessage::init(){
+    control = 0;
+    fromCommander = false;
+    instruction = 0;
+    data = (byte*)malloc(0);
+    dataLength = 0;
+    hops = (byte*)malloc(0);
+    hopCount = 0;
+    lastHop = 0;
+}
 //========== PUBLIC ==========
 //---------- constructor ----------
-CommandMessage::CommandMessage(byte _instruction, void *_data, byte byteLength){
-    printf("\r\ni:%d len:%d data:", _instruction, byteLength);
-    printBytes((byte*)_data, byteLength);
-    printf("inst: %d", instruction);
+CommandMessage::CommandMessage(byte _instruction, void *_data, byte byteLength, byte _bufferSize){
+    init();
+    bufferSize = _bufferSize;
     instruction = _instruction;
-    printf("inst: %d", instruction);
-	realloc(data, sizeof(byte) * byteLength);
-	for(byte ct=0;ct<byteLength;ct++)
-		data[ct] = ((byte*)_data)[ct];
-	dataLength = byteLength;
-
-    printf("\r\ni:%d len:%d data:", instruction, dataLength);
-    printBytes((byte*)data, dataLength);
+    realloc(data, sizeof(byte) * byteLength);
+    memset(data, 0, byteLength);
+    for(byte ct=0;ct<byteLength;ct++)
+        data[ct] = ((byte*)_data)[ct];
+    dataLength = byteLength;
 }
 CommandMessage::CommandMessage(byte* buffer, byte _bufferSize){
+    init();
+    printf("sizeof(buffer) = %d", sizeof(buffer));
     bufferSize = _bufferSize;
     //header
     control = buffer[0];
     fromCommander = isBitSet(control, 0);
     instruction = buffer[1];
-    //data
+
     dataLength = buffer[2];
-    byte dataIndex = 3;
-    data = (byte*)malloc(sizeof(byte) * dataLength);
-    for(byte ct=0;ct<dataLength;ct++)
-        data[ct] = buffer[dataIndex + ct];
-    //hops
-    hopCount = buffer[dataIndex+dataLength];
-    byte hopIndex = dataIndex+dataLength+1;
-    hops = (byte*)malloc(sizeof(byte) * hopCount);
-    for(byte ct=0;ct<hopCount;ct++)
-        hops[ct] = buffer[hopIndex + ct];
-    lastHop = hops[hopCount-1];
+    hopCount = buffer[3];
+
+    byte dataStart = 4;
+    byte hopStart = 4+dataLength;
+
+    if (validate()){
+        //data
+        if (dataLength < bufferSize-4-hopCount && hopCount < bufferSize-4-dataLength){
+            data = (byte*)malloc(sizeof(byte) * dataLength);
+            for(byte ct=0;ct<dataLength;ct++)
+                data[ct] = buffer[dataStart + ct];
+        }
+        //hops
+        hops = (byte*)malloc(sizeof(byte) * hopCount);
+        for(byte ct=0;ct<hopCount;ct++)
+            hops[ct] = buffer[hopStart + ct];
+        lastHop = hops[hopCount-1];
+    }
 }
 //---------- destructor ----------
 CommandMessage::~CommandMessage(){
@@ -55,15 +70,16 @@ byte* CommandMessage::buildBuffer(){
     memset(buffer, 0, bufferSize);
     buffer[0] = setBit(buffer[0], 0, fromCommander);//fromCommander
     buffer[1] = instruction;
-    //data
     buffer[2] = dataLength;
+    buffer[3] = hopCount;
+    byte dataStart = 4;
+    byte hopStart = 4+dataLength;
+    //data
     for(byte ct=0;ct<dataLength;ct++)
-        buffer[2+ct] = data[ct];
+        buffer[dataStart+ct] = data[ct];
     //hops
-    byte hopIndex = 3+buffer[2];
-    buffer[hopIndex] = hopCount;
     for(byte ct=0;ct<hopCount;ct++)
-        buffer[hopIndex+1+ct] = hops[ct];
+        buffer[hopStart+ct] = hops[ct];
     return buffer;
 }
 //---------- addHop ----------
@@ -76,6 +92,7 @@ void CommandMessage::addHop(byte id){
 byte CommandMessage::removeLastHop(){
     hopCount--;
     lastHop = ((byte*)hops)[hopCount-1];
+    realloc(hops, sizeof(byte) * hopCount);
     return lastHop;
 }
 //---------- print ----------

@@ -10,6 +10,6 @@ byte setBit(byte b, byte n, bool on);
 //---------- math ----------
 unsigned long diff(unsigned long a, unsigned long b);
 //---------- printing ----------
-void printBytes(byte* ptr, byte length);
+void printBytes(byte* ptr, int length);
 
 #endif
