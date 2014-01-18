@@ -16,19 +16,12 @@
 #ifndef __PRINTF_H__
 #define __PRINTF_H__
 
+#include "base.h"
+
 #ifdef ARDUINO
 
-int serial_putc( char c, FILE * ) 
-{
-  Serial.write( c );
-
-  return c;
-} 
-
-void printf_begin(void)
-{
-  fdevopen( &serial_putc, 0 );
-}
+int serial_putc( char c, FILE * );
+void printf_begin(void);
 
 #else
 #error This example is only for use on Arduino.

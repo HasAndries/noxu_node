@@ -1,3 +1,10 @@
+//commandMessage.h
+#ifndef CommandMessage_H
+#define CommandMessage_H
+
+#include "base.h"
+#include "common.h"
+
 class CommandMessage{
 private:
     //---------- properties ----------
@@ -5,6 +12,7 @@ private:
 protected:
 public:
     //---------- properties ----------
+    byte bufferSize;
     byte control;
     bool fromCommander;
     byte instruction;
@@ -14,8 +22,8 @@ public:
     byte *hops;
     byte lastHop;
 
-    CommandMessage();
-    CommandMessage(byte *buffer);
+    CommandMessage(byte instruction, void *_data, byte byteLength);
+    CommandMessage(byte *buffer, byte _bufferSize);
     ~CommandMessage();
 
     bool validate();
@@ -25,3 +33,4 @@ public:
 
     void print(char *heading);
 };
+#endif

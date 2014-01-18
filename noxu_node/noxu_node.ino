@@ -1,40 +1,28 @@
 #include <EEPROM.h>
 #include <SPI.h>
-#include "nRF24L01.h"
-#include "RF24.h"
 #include "printf.h"
+#include "common.h"
+#include "commandNetwork.h"
 
-//---------- instructions ----------
-typedef enum {
-    REQ_COMMAND = 0, RES_COMMAND = 100,//broadcast
-    REQ_NETWORKID = 1, RES_NETWORKID = 101
-} instructions;
-//---------- endpoint ----------
-struct endpoint{
-    byte channel;
-    byte id;
-    uint64_t pipe;
-};
 //---------- settings ----------
-const uint64_t basePipe = 0xF0F0F0F000LL;
-const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F000LL };
-const unsigned int runInterval = 2000;
-const unsigned int receiveDuration = 500;
-const byte bufferSize = 32;
+const byte bufferSize = 32;//max 32
+const unsigned int loopInterval = 1000;
+const unsigned int runInterval = 1000;
+const unsigned int receiveDuration = 1000;
 
 
-CommandNetwork network;
+CommandNetwork *network;
 
 void setup() {
     Serial.begin(57600);
     printf_begin();
-    network = CommandNetwork();
-    network.setup();
-    network.setReceiveHandler(receive);
+    network = new CommandNetwork(bufferSize, loopInterval, runInterval, receiveDuration);
+    network->setup();
+    network->setReceiveHandler(receive);
 }
 
 void loop() {
-    network.loop();
+    network->loop();
 }
 
 void receive(byte type, byte* data){
