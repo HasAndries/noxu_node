@@ -21,7 +21,7 @@ struct endpoint{
     uint64_t pipe;
 };
 const uint64_t basePipe = 0xF0F0F0F000LL;
-const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F000LL };
+const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F0F0LL };
 
 class CommandNetwork{
 private:

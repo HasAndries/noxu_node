@@ -3,7 +3,8 @@
 //========== PRIVATE ==========
 //---------- inbound ----------
 void CommandNetwork::startListen(){
-	//printf("<<START listen\n");
+    if (listening) return;
+	//printf("<<LISTEN START\n");
 	//todo: set channel
 	radio->openReadingPipe(1, epBroadcast.pipe);
 	if (hasCommander)
@@ -12,7 +13,8 @@ void CommandNetwork::startListen(){
 	listening = true;
 }
 void CommandNetwork::stopListen(){
-	//printf("<<STOP listen\n");
+    if (!listening) return;
+	//printf("<<LISTEN STOP\n");
 	radio->stopListening();
 	listening = false;
 }
@@ -20,13 +22,14 @@ void CommandNetwork::processInbound(){
 	uint8_t pipe;
 	if (radio->available(&pipe)){
 		byte* buffer = (byte*)malloc(sizeof(byte) * bufferSize);
-		if (radio->read(&buffer, bufferSize)) {
-			printf("<<INBOUND -> ");
+		if (radio->read(buffer, bufferSize)) {
+			printf("<<INBOUND(%x) -> ", pipe);
 			printBytes(buffer, bufferSize);
             CommandMessage *msg = new CommandMessage(buffer, bufferSize);
+            printf("valid message=%d", msg->validate());
 			if (msg->validate()){
-				if (epBroadcast.pipe == pipe) receiveBroadcast(msg);
-				else if (hasCommander && epCommand.pipe == pipe) receiveCommand(msg);
+				if (pipe == 1) receiveBroadcast(msg);
+				else if (hasCommander && pipe == 2) receiveCommand(msg);
 			}
 			delete msg;
 		}
@@ -85,8 +88,8 @@ void CommandNetwork::receiveCommand(CommandMessage *msg){
 //---------- outbound ----------
 void CommandNetwork::queueMessage(byte **queue, uint64_t *queueLength, CommandMessage *msg){
 	byte* buffer = msg->buildBuffer();
-    printf(">>QUEUEMESSAGE -> ");
-    printBytes(buffer, bufferSize);
+    //printf(">>QUEUEMESSAGE -> ");
+    //printBytes(buffer, bufferSize);
 	(*queueLength)++;
 	realloc(queue, *queueLength * sizeof(byte));
 	queue[(*queueLength)-1] = buffer;
@@ -95,7 +98,7 @@ void CommandNetwork::processOutbound(){
     //broadcast
     while(broadcastQueueLength > 0){
         broadcastQueueLength--;
-        printf(">>BROADCAST(%d) -> ", epBroadcast.id);
+        printf(">>BROADCAST(%x) -> ", epBroadcast.pipe);
 	    printBytes(broadcastQueue[broadcastQueueLength], bufferSize);
         sendBuffer(epBroadcast.pipe, broadcastQueue[broadcastQueueLength]);
         free(broadcastQueue[broadcastQueueLength]);
@@ -104,7 +107,7 @@ void CommandNetwork::processOutbound(){
     //command
     while(commandQueueLength > 0){
         commandQueueLength--;
-        printf(">>COMMAND(%d) -> ", epCommand.id);
+        printf(">>COMMAND(%x) -> ", epCommand.pipe);
 	    printBytes(commandQueue[commandQueueLength], bufferSize);
         sendBuffer(epCommand.pipe, commandQueue[commandQueueLength]);
         free(commandQueue[commandQueueLength]);
@@ -118,7 +121,7 @@ void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
 
 	//todo: set channel
 	radio->openWritingPipe(pipe);
-	radio->write(buffer, sizeof(buffer));
+    radio->write(buffer, bufferSize);
 
 	if (wasListening)
 		startListen();
@@ -152,7 +155,7 @@ void CommandNetwork::setup(){
 
 	radio = new RF24(9, 10);
 	radio->begin();
-    radio->setChannel(3);
+    radio->setChannel(0);
     radio->setRetries(10,10);
 	radio->setPayloadSize(bufferSize);
 	radio->setAutoAck(true);

@@ -3,35 +3,10 @@
     <Platform Name="arduino10x" Package="arduino" Platform="avr" Architecture="avr">
       <Board Name="uno" Description="Arduino Uno" CoreFolder="C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino" VariantFullPath="C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard" McuIdePath="C:\Program Files (x86)\Arduino" McuSketchBookPath="C:\projects\Arduino" name="Arduino Uno" upload.protocol="arduino" upload.maximum_size="32256" upload.speed="115200" bootloader.low_fuses="0xff" bootloader.high_fuses="0xde" bootloader.extended_fuses="0x05" bootloader.path="optiboot" bootloader.file="optiboot_atmega328.hex" bootloader.unlock_bits="0x3F" bootloader.lock_bits="0x0F" build.mcu="atmega328p" build.f_cpu="16000000L" build.core="arduino" build.variant="standard" runtime.ide.path="C:\Program Files (x86)\Arduino" build.system.path="C:\Program Files (x86)\Arduino\hardware\arduino\system" runtime.ide.version="105" originalid="uno" build.core.vmresolved="C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino" build.core.parentfolder.vmresolved="C:\Program Files (x86)\Arduino\hardware\arduino\cores" build.core.coresparentfolder.vmresolved="C:\Program Files (x86)\Arduino\hardware\arduino" vm.core.include="arduino.h" vm.boardsource.path="C:\Program Files (x86)\Arduino\hardware\arduino" vm.platformname.name="avr" build.arch="AVR" ide.hint="Arduino 0023 and 1.0.x Ide" ide.location.key="Arduino" ide.location.ide.winreg="Arduino 1.0.x Application" ide.location.sketchbook.winreg="Arduino 1.0.x Sketchbook" ide.location.sketchbook.preferences="sketchbook.path" ide.location.sketchbook.default="%MYDOCUMENTS%\arduino" ide.location.preferences="%VM_APPDATA_ROAMING%\arduino\preferences.txt" ide.default.package="arduino" ide.default.platform="avr" ide.multiplatform="true" ide.includes="arduino.h" ide.platformswithoutpackage="true" ide.sketchfolder.platforms.exclude="avr" ide.includes.fallback="wprogram.h" ide.extension="ino" ide.extension.fallback="pde" ide.versionLTEQ="149" ide.exe="arduino.exe" ide.hosts="atmel" ide.url="http://arduino.cc/en/Main/Software" vm.debug="true" software="ARDUINO" ide.appid="arduino10x" location.sketchbook="C:\projects\Arduino" build.variant.vmresolved="C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard" compiler.path="C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\" includes=" -I&quot;C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino&quot;  -I&quot;C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard&quot;  -I&quot;C:\Program Files (x86)\Arduino\libraries\EEPROM&quot;  -I&quot;C:\Program Files (x86)\Arduino\libraries\SPI&quot; " build.path="C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno" build.project_name="noxu_node" build.variant.path="C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard" archive_file="core.a" object_file="C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\SPI\SPI.cpp.o" source_file="C:\Program Files (x86)\Arduino\libraries\SPI\SPI.cpp" build.architecture="avr" vmresolved.compiler.path="C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\" vmresolved.tools.path="C:\Program Files (x86)\Arduino\hardware\tools\avr" object_files="&quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\commandMessage.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\commandNetwork.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\common.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\noxu_node.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\printf.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\RF24.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\EEPROM\EEPROM.cpp.o&quot; &quot;C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno\SPI\SPI.cpp.o&quot; " />
     </Platform>
-    <Compile CompilerErrors="0" ConfigurationName="Debug" StopOnError="False" OptimiseLibs="True" OptimiseCore="True" BuildPath="C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno" IsDebugStart="1" SketchName="noxu_node" ReportDigitalPins="0" ReportAnalogPins="0" ReportI2C="0" ReportFreeMemory="0" IncludeDebug="1" LastDebugPreProcessorDefinitions="VM_DEBUG;VM_DEBUG_ENABLE 1;VM_DEBUG_BANDWIDTH_THROTTLE_MS 80;VM_DEBUGGER_TYPE_HARDWARESERIAL 0;VM_DEBUGGER_TYPE_SOFTWARESERIAL 1;VM_DEBUGGER_TYPE_FASTSERIAL 2;VM_DEBUGGER_TYPE_USB 3;VM_DEBUGGER_TYPE_TEENSY 4;VM_DEBUGGER_TYPE_UART 5;VM_DEBUGGER_TYPE_USART 6;VM_DEBUGGER_TYPE_USBSERIAL 7;VM_DEBUGGER_TYPE VM_DEBUGGER_TYPE_HARDWARESERIAL;VM_DEBUG_BREAKPAUSE;" IncludesDebug="1" IsCompiled="1" />
+    <Compile CompilerErrors="0" ConfigurationName="Debug" StopOnError="False" OptimiseLibs="True" OptimiseCore="True" BuildPath="C:\Users\hasandries\AppData\Local\VMicro\Arduino\Builds\noxu_node\uno" IsDebugStart="0" IncludeDebug="0" IncludesDebug="0" SketchName="noxu_node" IsCompiled="1" />
     <Debug JumpToSource="1" LocalPortSpeed="57600" EnableBreak="1" RemotePortSpeed="57600" RemotePortTransport="HardwareSerial" LocalPort="" DebugMode="Full" DebugEnabled="1" />
     <VCCodeModel>
       <VCCodeMacros />
     </VCCodeModel>
-    <BreakPoints>
-      <BreakPoint Index="1" Name="commandNetwork.cpp, line 160" Id="796a79b5-f90d-42d2-927a-42dc95bf7cc1" Enabled="1" Message="{radio-&gt;getDynamicPayloadSize()}" MessageTextType="2" PreProcessedMessage="{0}" Condition="" ConditionType="1" CurrentHits="0" File="c:\projects\noxu\noxu_node\commandnetwork.cpp" FileLine="160" FileColumn="1" FunctionName="setup()" FunctionLineOffset="15" FunctionColumnOffset="1" HitCountTarget="1" HitCountType="1" Language="C++" LocationType="3" Tag="&lt;vmbp Id='8137aa76-8320-4a1e-8b6c-b0c667b8a144'/&gt;" Type="1" ToString="System.__ComObject" BreakWhenHit="0">
-        <Source>153		radio = new RF24(9, 10);
-154		radio-&gt;begin();
-155	    radio-&gt;setChannel(3);
-156	    radio-&gt;setRetries(10,10);
-157		radio-&gt;setPayloadSize(bufferSize);
-158		radio-&gt;setAutoAck(true);
-159		radio-&gt;setAutoAck(epBroadcast.pipe, false);
---&gt;160		radio-&gt;printDetails();
-161		printf("\r\n=====================\r\n");
-162	}
-163	
-164	//---------- operations ----------
-165	void CommandNetwork::loop(){
-166		bool shouldRun = false;
-167		unsigned long now = millis();
-168	    unsigned int runDiff = diff(lastRun, now);
-169	    if (runDiff &gt;= runInterval || !hasCommander) shouldRun = true;
-</Source>
-        <MessageVariables>
-          <MessageVariable Name="radio-&gt;getDynamicPayloadSize()" Index="1" />
-        </MessageVariables>
-      </BreakPoint>
-    </BreakPoints>
   </Program>
 </VisualMicro>

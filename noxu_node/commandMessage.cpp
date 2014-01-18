@@ -25,8 +25,6 @@ CommandMessage::CommandMessage(byte _instruction, void *_data, byte byteLength, 
 }
 CommandMessage::CommandMessage(byte* buffer, byte _bufferSize){
     init();
-    printf("sizeof(buffer) = %d", sizeof(buffer));
-    bufferSize = _bufferSize;
     //header
     control = buffer[0];
     fromCommander = isBitSet(control, 0);
