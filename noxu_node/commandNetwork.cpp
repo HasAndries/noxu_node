@@ -22,14 +22,13 @@ void CommandNetwork::processInbound(){
 	uint8_t pipe;
 	if (radio->available(&pipe)){
 		byte* buffer = (byte*)malloc(sizeof(byte) * bufferSize);
-		if (radio->read(buffer, bufferSize) && pipe <= 2) {
+		if (radio->read(buffer, bufferSize)) {
 			printf("<<INBOUND(%x) -> ", pipe);
 			printBytes(buffer, bufferSize);
             CommandMessage *msg = new CommandMessage(buffer, bufferSize);
-            printf("valid message=%d", msg->validate());
 			if (msg->validate()){
-				if (pipe == 1) receiveBroadcast(msg);
-				else if (hasCommander && pipe == 2) receiveCommand(msg);
+				if (pipe == 0) receiveBroadcast(msg);
+				else if (hasCommander && pipe == 1) receiveCommand(msg);
 			}
 			delete msg;
 		}
@@ -48,7 +47,7 @@ void CommandNetwork::receiveBroadcast(CommandMessage *msg) {
 			msg->data[msg->dataLength] = epDevice.id;
 			msg->dataLength += sizeof(epDevice.id);
 			msg->instruction = RES_COMMAND;
-            queueMessage(epBroadcast.pipe, msg);
+            queueMessage(epBroadcast.id, msg);
 		}
 		break;
 	case RES_COMMAND:
@@ -74,19 +73,19 @@ void CommandNetwork::receiveCommand(CommandMessage *msg){
 	else if (msg->fromCommander && msg->hopCount > 0){//message is routed back through this node
 		//remove last hop and forward message to next hop
 		byte lastHop = msg->removeLastHop();
-        queueMessage(basePipe+lastHop, msg);
+        queueMessage(lastHop, msg);
 	}
 	else if (msg->fromCommander){//big problem, maybe send out notification?
 	}
 	else if (!msg->fromCommander){//forward message onto commander
 		//add current node id and send to commander
 		msg->addHop(epDevice.id);
-        queueMessage(epCommand.pipe, msg);
+        queueMessage(epCommand.id, msg);
 	}
 }
 
 //---------- outbound ----------
-void CommandNetwork::queueMessage(uint64_t pipe, CommandMessage *msg){
+void CommandNetwork::queueMessage(byte pipeId, CommandMessage *msg){
 	byte* buffer = msg->buildBuffer();
     //printf(">>QUEUEMESSAGE -> ");
     //printBytes(buffer, bufferSize);
@@ -94,13 +93,13 @@ void CommandNetwork::queueMessage(uint64_t pipe, CommandMessage *msg){
 	realloc(outboundQueue, outboundQueueLength * sizeof(byte));
 	outboundQueue[outboundQueueLength-1] = buffer;
     realloc(outboundQueuePipe, outboundQueueLength * sizeof(byte));
-    outboundQueuePipe[outboundQueueLength-1] = pipe;
+    outboundQueuePipe[outboundQueueLength-1] = pipeId;
 }
 void CommandNetwork::processOutbound(){
     //broadcast
     uint64_t ct =0;
     while(ct < outboundQueueLength){
-        printf(">>OUTBOUND(%x) -> ", outboundQueuePipe[ct]);
+        printf(">>OUTBOUND(%x) -> ", basePipe + outboundQueuePipe[ct]);
 	    printBytes(outboundQueue[ct], bufferSize);
         sendBuffer(outboundQueuePipe[ct], outboundQueue[ct]);
         free(outboundQueue[ct]);
@@ -138,7 +137,7 @@ CommandNetwork::CommandNetwork(const byte _bufferSize, unsigned int _loopInterva
     runInterval = _runInterval;
     receiveDuration = _receiveDuration;
 	outboundQueue = (byte**)malloc(0);
-    outboundQueuePipe = (uint64_t*)malloc(0);
+    outboundQueuePipe = (byte*)malloc(0);
     outboundQueueLength = 0;
 }
 void CommandNetwork::setup(){
@@ -150,11 +149,11 @@ void CommandNetwork::setup(){
 
 	radio = new RF24(9, 10);
 	radio->begin();
-    radio->setChannel(10);
-    radio->setRetries(10,10);
+    radio->setChannel(0);
+    radio->setRetries(0,0);
 	radio->setPayloadSize(bufferSize);
 	radio->setAutoAck(true);
-	radio->setAutoAck(epBroadcast.pipe, false);
+	radio->setAutoAck(epBroadcast.pipe, true);
 	radio->printDetails();
 	printf("\r\n=====================\r\n");
 }
@@ -185,11 +184,11 @@ void CommandNetwork::setReceiveHandler(void (*f)(byte, byte*)){
 }
 void CommandNetwork::broadcast(byte instruction, void* data, byte byteLength){
     CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
-    queueMessage(epBroadcast.pipe, msg);
+    queueMessage(epBroadcast.id, msg);
 	delete msg;
 }
 void CommandNetwork::command(byte instruction, void* data, byte byteLength){
 	CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
-    queueMessage(epCommand.pipe, msg);
+    queueMessage(epCommand.id, msg);
 	delete msg;
 }
