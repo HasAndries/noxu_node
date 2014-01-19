@@ -20,8 +20,8 @@ struct endpoint{
     byte id;
     uint64_t pipe;
 };
-const uint64_t basePipe = 0xF0F0F0F000LL;
-const endpoint epBroadcast = { 0x00, 0x00, 0xF0F0F0F0F0LL };
+const uint64_t basePipe = 0xF0F0F0F0F0LL;
+const endpoint epBroadcast = { 0xF0, 0xF0, 0xF0F0F0F0F0LL };
 
 class CommandNetwork{
 private:
@@ -40,10 +40,9 @@ private:
     endpoint epDevice;
     void (*receiveHandler)(byte, byte[]);
 
-    byte** commandQueue;
-    uint64_t commandQueueLength;
-    byte** broadcastQueue;
-    uint64_t broadcastQueueLength;
+    byte** outboundQueue;
+    uint64_t *outboundQueuePipe;
+    uint64_t outboundQueueLength;
 
     //---------- inbound ----------
     void startListen();
@@ -53,7 +52,7 @@ private:
     void receiveCommand(CommandMessage *msg);
 
     //---------- outbound ----------
-    void queueMessage(byte **queue, uint64_t *queueLength, CommandMessage *msg);
+    void queueMessage(uint64_t pipe, CommandMessage *msg);
     void processOutbound();
     void sendBuffer(uint64_t pipe, byte buffer[]);
 
