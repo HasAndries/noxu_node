@@ -27,7 +27,7 @@ class CommandNetwork{
 private:
     //---------- properties ----------
     byte bufferSize;//max 32
-    unsigned int loopInterval;
+    unsigned int maxLoopInterval;
     unsigned int runInterval;
     unsigned int receiveDuration;
     RF24 *radio;
@@ -56,15 +56,20 @@ private:
     void processOutbound();
     void sendBuffer(uint64_t pipe, byte buffer[]);
 
-    //---------- other ----------
+    //---------- control ----------
     void resetDeviceId();
 public:
-    CommandNetwork(byte _bufferSize, unsigned int loopInterval, unsigned int runInterval, unsigned int receiveDuration);
+	//---------- constructors ----------
+    CommandNetwork(byte _bufferSize, unsigned int maxLoopInterval, unsigned int runInterval, unsigned int receiveDuration);
+
+	//---------- lifetime ----------
     void setup();
     void loop();
 
+	//---------- inbound ----------
     void setReceiveHandler(void (*f)(byte, byte*));
 
+	//---------- outbound ----------
     void broadcast(byte instruction, void* data, byte byteLength);
     void command(byte instruction, void* data, byte byteLength);
 };
@@ -72,7 +77,7 @@ public:
 //---------- instructions ----------
 typedef enum {
     REQ_COMMAND = 0, RES_COMMAND = 100,//broadcast
-    REQ_NETWORKID = 1, RES_NETWORKID = 101
+    REQ_NETWORKID = 1, RES_NETWORKID = 101//broadcast, command
 } instructions;
 
 #endif
