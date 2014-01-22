@@ -129,17 +129,20 @@ void CommandNetwork::resetDeviceId(){
 	hasCommander = false;
 	tempId = random(10000, 65535);
 }
+
 //========== PUBLIC ==========
-//---------- build ----------
-CommandNetwork::CommandNetwork(const byte _bufferSize, unsigned int _loopInterval, unsigned int _runInterval, unsigned int _receiveDuration){
+//---------- constructors ----------
+CommandNetwork::CommandNetwork(const byte _bufferSize, unsigned int _maxLoopInterval, unsigned int _runInterval, unsigned int _receiveDuration){
     bufferSize = _bufferSize;
-    loopInterval = _loopInterval;
+    maxLoopInterval = _maxLoopInterval;
     runInterval = _runInterval;
     receiveDuration = _receiveDuration;
 	outboundQueue = (byte**)malloc(0);
     outboundQueuePipe = (byte*)malloc(0);
     outboundQueueLength = 0;
 }
+
+//---------- lifetime ----------
 void CommandNetwork::setup(){
 	printf("\r\n====== RFnode ======\r\n");
 	listening = false;
@@ -157,14 +160,12 @@ void CommandNetwork::setup(){
 	radio->printDetails();
 	printf("\r\n=====================\r\n");
 }
-
-//---------- operations ----------
 void CommandNetwork::loop(){
 	bool shouldRun = false;
 	unsigned long now = millis();
     unsigned int runDiff = diff(lastRun, now);
     if (runDiff >= runInterval || !hasCommander) shouldRun = true;
-    if (runDiff < loopInterval) shouldRun = false;
+	if (runDiff < maxLoopInterval) shouldRun = false;
 
 	if (shouldRun){//run that shit!
 		lastRun = now;
@@ -179,9 +180,13 @@ void CommandNetwork::loop(){
         processOutbound();
 	}
 }
+
+//---------- inbound ----------
 void CommandNetwork::setReceiveHandler(void (*f)(byte, byte*)){
 	receiveHandler = *f;
 }
+
+//---------- outbound ----------
 void CommandNetwork::broadcast(byte instruction, void* data, byte byteLength){
     CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
     queueMessage(epBroadcast.id, msg);

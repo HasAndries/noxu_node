@@ -23,15 +23,22 @@ public:
     byte *hops;
     byte lastHop;
 
+	//---------- constructors ----------
     CommandMessage(byte instruction, void *_data, byte byteLength, byte _bufferSize);
     CommandMessage(byte *buffer, byte _bufferSize);
     ~CommandMessage();
 
+	//---------- validation ----------
     bool validate();
+	
+	//---------- output ----------
     byte* buildBuffer();
+	
+	//---------- hops ----------
     void addHop(byte id);
     byte removeLastHop();
 
+	//---------- print ----------
     void print(char *heading);
 };
 #endif
