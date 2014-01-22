@@ -4,3 +4,4 @@ Debug
 *.suo
 .vcxproj.user
 ~AutoRecover.*
+npm-debug.log
