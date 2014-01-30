@@ -152,11 +152,13 @@ void CommandNetwork::setup(){
 
 	radio = new RF24(9, 10);
 	radio->begin();
-    radio->setChannel(0);
+    radio->setChannel(62);
     radio->setRetries(0,0);
 	radio->setPayloadSize(bufferSize);
 	radio->setAutoAck(true);
 	radio->setAutoAck(epBroadcast.pipe, true);
+    radio->setCRCLength(RF24_CRC_16);
+    radio->setDataRate(RF24_1MBPS);
 	radio->printDetails();
 	printf("\r\n=====================\r\n");
 }

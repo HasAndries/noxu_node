@@ -7,8 +7,8 @@
 //---------- settings ----------
 const byte bufferSize = 32;//max 32
 const unsigned int maxLoopInterval = 1000;
-const unsigned int runInterval = 20000;
-const unsigned int receiveDuration = 10000;
+const unsigned int runInterval = 2000;
+const unsigned int receiveDuration = 2000;
 
 
 CommandNetwork *network;
