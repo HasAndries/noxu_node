@@ -26,5 +26,8 @@ void loop() {
 }
 
 void receive(byte type, byte* data){
+    //if (type == 2){//read pins
+    //    byte pinCount = data[0];
 
+    //}
 }
