@@ -11,5 +11,7 @@ byte setBit(byte b, byte n, bool on);
 unsigned long diff(unsigned long a, unsigned long b);
 //---------- printing ----------
 void printBytes(byte* ptr, int length);
+//---------- printLL ----------
+void printLL(uint64_t n, uint8_t base);
 
 #endif

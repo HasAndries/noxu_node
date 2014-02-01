@@ -95,13 +95,17 @@ void CommandNetwork::queueMessage(byte pipeId, CommandMessage *msg){
     realloc(outboundQueuePipe, outboundQueueLength * sizeof(byte));
     outboundQueuePipe[outboundQueueLength-1] = pipeId;
 }
+
 void CommandNetwork::processOutbound(){
     //broadcast
     uint64_t ct =0;
     while(ct < outboundQueueLength){
-        printf(">>OUTBOUND(%x) -> ", basePipe + outboundQueuePipe[ct]);
+        uint64_t pipe = (basePipe + outboundQueuePipe[ct]);
+        printf(">>OUTBOUND(");
+        printLL(pipe, 16);
+        printf(") -> ");
 	    printBytes(outboundQueue[ct], bufferSize);
-        sendBuffer(outboundQueuePipe[ct], outboundQueue[ct]);
+        sendBuffer(pipe, outboundQueue[ct]);
         free(outboundQueue[ct]);
         ct++;
     }
@@ -152,6 +156,7 @@ void CommandNetwork::setup(){
 
 	radio = new RF24(9, 10);
 	radio->begin();
+    radio->setPALevel(RF24_PA_LOW);
     radio->setChannel(0x4c);
     radio->setCRCLength(RF24_CRC_16);
     radio->setDataRate(RF24_1MBPS);
