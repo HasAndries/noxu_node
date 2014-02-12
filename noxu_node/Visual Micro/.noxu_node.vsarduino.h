@@ -3,7 +3,6 @@
 //Board = Arduino Uno
 #define __AVR_ATmega328P__
 #define 
-#define _VMDEBUG 1
 #define ARDUINO 105
 #define ARDUINO_MAIN
 #define __AVR__
@@ -32,7 +31,7 @@ extern "C" void __cxa_pure_virtual() {;}
 
 //
 //
-void receive(byte type, byte* data);
+void receive(byte type, byte* data, byte dataLength);
 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard\pins_arduino.h" 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"

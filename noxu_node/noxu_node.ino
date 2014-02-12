@@ -25,9 +25,11 @@ void loop() {
     network->loop();
 }
 
-void receive(byte type, byte* data){
+void receive(byte type, byte* data, byte dataLength){
     //if (type == 2){//read pins
     //    byte pinCount = data[0];
 
     //}
+    printf("<<DATA(%d) ", type);
+    printBytes(data, dataLength);
 }
