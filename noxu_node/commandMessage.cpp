@@ -10,7 +10,6 @@ void CommandMessage::init(){
 	dataLength = 0;
 	hops = (byte*)malloc(0);
 	hopCount = 0;
-	lastHop = 0;
 }
 
 //========== PUBLIC ==========
@@ -50,7 +49,6 @@ CommandMessage::CommandMessage(byte* buffer, byte _bufferSize){
 		hops = (byte*)malloc(sizeof(byte) * hopCount);
 		for(byte ct=0;ct<hopCount;ct++)
 			hops[ct] = buffer[hopStart + ct];
-		lastHop = hops[hopCount-1];
 	}
 }
 CommandMessage::~CommandMessage(){
@@ -91,11 +89,8 @@ void CommandMessage::addHop(byte id){
 	realloc(hops, sizeof(byte) * hopCount);
 	hops[hopCount-1] = id;
 }
-byte CommandMessage::removeLastHop(){
-	hopCount--;
-	lastHop = ((byte*)hops)[hopCount-1];
-	realloc(hops, sizeof(byte) * hopCount);
-	return lastHop;
+int CommandMessage::hopIndex(byte id){
+    return findIndex(hops, hopCount, id);
 }
 
 //---------- print ----------

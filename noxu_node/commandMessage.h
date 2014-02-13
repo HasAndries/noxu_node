@@ -21,7 +21,6 @@ public:
     byte *data;
     byte hopCount;
     byte *hops;
-    byte lastHop;
 
 	//---------- constructors ----------
     CommandMessage(byte instruction, void *_data, byte byteLength, byte _bufferSize);
@@ -36,7 +35,7 @@ public:
 	
 	//---------- hops ----------
     void addHop(byte id);
-    byte removeLastHop();
+    int hopIndex(byte id);
 
 	//---------- print ----------
     void print(char *heading);

@@ -19,10 +19,10 @@ unsigned long diff(unsigned long a, unsigned long b){
 }
 //---------- printing ----------
 void printBytes(byte* ptr, int length){
-    for(int ct=0;ct<length;ct++){
-        printf("%d", ptr[ct]);
+    for(int ct=0;ct<length-1;ct++){
+        printf("%d,", ptr[ct]);
     }
-    printf("\r\n");
+    printf("%d\r\n", ptr[length-1]);
 }
 //---------- printLL ----------
 void printLL(uint64_t n, uint8_t base)
@@ -46,4 +46,11 @@ void printLL(uint64_t n, uint8_t base)
     Serial.write((char) (buf[i - 1] < 10 ?
       '0' + buf[i - 1] :
       'A' + buf[i - 1] - 10));
+}
+int findIndex(byte arr[], byte length, byte searchVal)
+{
+   byte i;
+   for (i=0; i<length; i++)
+	 if (arr[i] == searchVal) return(i);
+   return(-1);
 }

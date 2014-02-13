@@ -7,16 +7,17 @@
 //---------- settings ----------
 const byte bufferSize = 32;//max 32
 const unsigned int maxLoopInterval = 1000;
-const unsigned int runInterval = 2000;
 const unsigned int receiveDuration = 2000;
-
+const uint64_t address = 0xF0F0F0F0F0LL;
+const uint8_t channel = 0x4c;
+const rf24_datarate_e datarate = RF24_1MBPS;
 
 CommandNetwork *network;
 
 void setup() {
     Serial.begin(57600);
     printf_begin();
-    network = new CommandNetwork(bufferSize, maxLoopInterval, runInterval, receiveDuration);
+    network = new CommandNetwork(address, channel, datarate, bufferSize, maxLoopInterval, receiveDuration);
     network->setup();
     network->setReceiveHandler(receive);
 }
