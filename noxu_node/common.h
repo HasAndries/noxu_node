@@ -15,4 +15,6 @@ void printBytes(byte* ptr, int length);
 void printLL(uint64_t n, uint8_t base);
 int findIndex(byte arr[], byte length, byte searchVal);
 
+uint32_t get_seed(int pin);
+
 #endif

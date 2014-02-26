@@ -21,8 +21,8 @@ void CommandNetwork::processInbound(){
     if (radio->available(&pipe)){
         byte* buffer = (byte*)malloc(sizeof(byte) * bufferSize);
         if (radio->read(buffer, bufferSize)) {
-            printf("<<INBOUND(%x) -> ", pipe);
-            printBytes(buffer, bufferSize);
+            //printf("<<INBOUND(%x) -> ", pipe);
+            //printBytes(buffer, bufferSize);
             CommandMessage *msg = new CommandMessage(buffer, bufferSize);
             if (msg->validate()){
                 receive(msg);
@@ -33,17 +33,18 @@ void CommandNetwork::processInbound(){
     }
 }
 void CommandNetwork::receive(CommandMessage *msg) {
-    msg->print("<<RECEIVE");
+    //msg->print("<<RECEIVE");
     bool shouldProcess = false;
     int deviceIndex = findIndex(msg->hops, msg->hopCount, networkId);
+    //printf("((uint16_t*)msg->data)[0] = %d", ((uint16_t*)msg->data)[0]);
 
     if (msg->fromCommander && deviceIndex == msg->hopCount-1){//last hop is for this deviceId, message is for this node
         shouldProcess = true;
     }
-    else if (msg->fromCommander && deviceIndex == -1 && msg->dataLength == sizeof(tempId) && msg->data[0]==tempId){//message is for this devices' tempId
+    else if (msg->fromCommander && deviceIndex == -1 && msg->dataLength == sizeof(tempId) && ((uint16_t*)msg->data)[0]==tempId){//message is for this devices' tempId
         shouldProcess = true;
     }
-    else if (msg->fromCommander && deviceIndex != -1){//message is routed back through this node, forward message to next hop
+    else if (msg->fromCommander && deviceIndex != -1 && msg->hopCount > 1){//message is routed back through this node, forward message to next hop
         queueMessage(msg);
     }
     else if (msg->fromCommander){//big problem, maybe send out notification?
@@ -58,11 +59,16 @@ void CommandNetwork::receive(CommandMessage *msg) {
         switch (msg->instruction)
         {
         case RES_NETWORKID:
-            printf(">>RES_NETWORKID -> %d\r\n", msg->data[2]);
-            networkId = msg->data[2];
+            networkId = msg->hops[msg->hopCount-1];
+            printf(">>RES_NETWORKID -> %d\r\n", networkId);            
+            break;
+        case REQ_PING:
+            printf(">>REQ_PING -> ");
+            printBytes(msg->data, msg->dataLength);
+            send(RES_PING, msg->data, msg->dataLength);
+            processOutbound();
             break;
         default:
-
             break;
         }
         (*receiveHandler)(msg->instruction, msg->data, msg->dataLength);
@@ -130,8 +136,10 @@ CommandNetwork::CommandNetwork(uint64_t _address, uint8_t _channel, rf24_datarat
 void CommandNetwork::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
-    randomSeed(analogRead(0));
+    //randomSeed((analogRead(0)+analogRead(1))/2);
+    randomSeed(get_seed(0));
     resetDeviceId();
+    printf("TempId: %ld\r\n", tempId);
 
     radio = new RF24(9, 10);
     radio->begin();
@@ -142,18 +150,18 @@ void CommandNetwork::setup(){
     radio->setRetries(0,0);
     radio->setPayloadSize(bufferSize);
     radio->enableDynamicPayloads();
-    radio->setAutoAck(true);
+    radio->setAutoAck(false);
     radio->powerUp();
     //radio->setAutoAck(epBroadcast.pipe, true);
-    radio->printDetails();
+    //radio->printDetails();
     printf("\r\n=====================\r\n");
 }
 void CommandNetwork::loop(){
-    bool shouldRun = false;
+    bool shouldRun = true;
     unsigned long now = millis();
     unsigned int runDiff = diff(lastRun, now);
-    if (networkId == 0) shouldRun = true;
     if (runDiff < maxLoopInterval) shouldRun = false;
+    if (networkId == 0) shouldRun = true;
 
     if (shouldRun){//run that shit!
         lastRun = now;
@@ -177,6 +185,8 @@ void CommandNetwork::setReceiveHandler(void (*f)(byte, byte*, byte)){
 //---------- outbound ----------
 void CommandNetwork::send(byte instruction, void* data, byte byteLength){
     CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
+    if (networkId != 0)
+        msg->addHop(networkId);
     queueMessage(msg);
     delete msg;
 }

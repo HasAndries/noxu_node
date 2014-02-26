@@ -26,7 +26,7 @@ private:
     unsigned int receiveDuration;
     RF24 *radio;
 
-    uint16_t tempId;
+    uint32_t tempId;
     uint16_t networkId;
     unsigned long lastRun;
     bool listening;
@@ -65,7 +65,8 @@ public:
 
 //---------- instructions ----------
 typedef enum {
-    REQ_NETWORKID = 1, RES_NETWORKID = 101
+    REQ_NETWORKID = 1, RES_NETWORKID = 101,
+    REQ_PING = 2, RES_PING = 102
 } instructions;
 
 #endif

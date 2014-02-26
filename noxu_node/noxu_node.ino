@@ -8,7 +8,7 @@
 const byte bufferSize = 32;//max 32
 const unsigned int maxLoopInterval = 1000;
 const unsigned int receiveDuration = 2000;
-const uint64_t address = 0xF0F0F0F0F0LL;
+const uint64_t address = 0x00F0F0F0F0LL;
 const uint8_t channel = 0x4c;
 const rf24_datarate_e datarate = RF24_1MBPS;
 
