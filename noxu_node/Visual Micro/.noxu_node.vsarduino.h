@@ -49,4 +49,6 @@ void receive(byte type, byte* data, byte dataLength);
 #include "C:\projects\noxu_node\noxu_node\nRF24L01.h"
 #include "C:\projects\noxu_node\noxu_node\printf.cpp"
 #include "C:\projects\noxu_node\noxu_node\printf.h"
+#include "C:\projects\noxu_node\noxu_node\trueRandom.cpp"
+#include "C:\projects\noxu_node\noxu_node\trueRandom.h"
 #endif

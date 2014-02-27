@@ -1,4 +1,5 @@
 #include "commandNetwork.h"
+#include "trueRandom.h"
 
 //========== PRIVATE ==========
 //---------- inbound ----------
@@ -21,8 +22,8 @@ void CommandNetwork::processInbound(){
     if (radio->available(&pipe)){
         byte* buffer = (byte*)malloc(sizeof(byte) * bufferSize);
         if (radio->read(buffer, bufferSize)) {
-            //printf("<<INBOUND(%x) -> ", pipe);
-            //printBytes(buffer, bufferSize);
+            printf("<<INBOUND(%x) -> ", pipe);
+            printBytes(buffer, bufferSize);
             CommandMessage *msg = new CommandMessage(buffer, bufferSize);
             if (msg->validate()){
                 receive(msg);
@@ -52,21 +53,24 @@ void CommandNetwork::receive(CommandMessage *msg) {
     else if (!msg->fromCommander){//forward message onto commander
         //add current node id and send to commander
         msg->addHop(networkId);
-        queueMessage(msg);
+        sendMessage(msg);
     }
 
     if (shouldProcess){
+        msg->print("<<RECEIVE");
         switch (msg->instruction)
         {
-        case RES_NETWORKID:
+        case NETWORKID_NEW:
             networkId = msg->hops[msg->hopCount-1];
-            printf(">>RES_NETWORKID -> %d\r\n", networkId);            
+            printf(">>NETWORKID_NEW -> %d\r\n", networkId);
+            msg->instruction = NETWORKID_CONFIRM;
+            sendMessage(msg);
             break;
-        case REQ_PING:
-            printf(">>REQ_PING -> ");
+        case PING:
+            printf(">>PING_REPLY -> ");
             printBytes(msg->data, msg->dataLength);
-            send(RES_PING, msg->data, msg->dataLength);
-            processOutbound();
+            msg->instruction = PING_REPLY;
+            sendMessage(msg);
             break;
         default:
             break;
@@ -83,16 +87,13 @@ void CommandNetwork::queueMessage(CommandMessage *msg){
     outboundQueueLength++;
     realloc(outboundQueue, outboundQueueLength * sizeof(byte));
     outboundQueue[outboundQueueLength-1] = buffer;
+    processOutbound();
 }
 
 void CommandNetwork::processOutbound(){
     //broadcast
     uint64_t ct =0;
     while(ct < outboundQueueLength){
-        printf(">>OUTBOUND(");
-        printLL(address, 16);
-        printf(") -> ");
-        printBytes(outboundQueue[ct], bufferSize);
         sendBuffer(address, outboundQueue[ct]);
         free(outboundQueue[ct]);
         ct++;
@@ -100,12 +101,21 @@ void CommandNetwork::processOutbound(){
     outboundQueueLength = 0;
     realloc(outboundQueue, 0);
 }
+void CommandNetwork::sendMessage(CommandMessage *msg){
+    byte* buffer = msg->buildBuffer();
+    sendBuffer(address, buffer);
+    free(buffer);
+}
 void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
     bool wasListening = listening;
     if (listening)
         stop();
 
-    //todo: set channel
+    printf(">>OUTBOUND(");
+    printLL(address, 16);
+    printf(") -> ");
+    printBytes(buffer, bufferSize);
+
     radio->openWritingPipe(pipe);
     radio->write(buffer, bufferSize);
 
@@ -116,7 +126,8 @@ void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
 //---------- control ----------
 void CommandNetwork::resetDeviceId(){
     networkId = 0;
-    tempId = random(10000, 65535);
+    //tempId = random(10000, 65535);
+    tempId = TrueRandom.random(10000, 65535);
 }
 
 //========== PUBLIC ==========
@@ -137,7 +148,6 @@ void CommandNetwork::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
     //randomSeed((analogRead(0)+analogRead(1))/2);
-    randomSeed(get_seed(0));
     resetDeviceId();
     printf("TempId: %ld\r\n", tempId);
 
@@ -162,7 +172,6 @@ void CommandNetwork::loop(){
     unsigned int runDiff = diff(lastRun, now);
     if (runDiff < maxLoopInterval) shouldRun = false;
     if (networkId == 0) shouldRun = true;
-
     if (shouldRun){//run that shit!
         lastRun = now;
         start();
@@ -171,9 +180,9 @@ void CommandNetwork::loop(){
         }
         stop();
         if (networkId == 0){
-            send(REQ_NETWORKID, &tempId, sizeof(tempId));
+            send(NETWORKID_REQ, &tempId, sizeof(tempId));
         }
-        processOutbound();
+        //processOutbound();
     }
 }
 
@@ -187,6 +196,6 @@ void CommandNetwork::send(byte instruction, void* data, byte byteLength){
     CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
     if (networkId != 0)
         msg->addHop(networkId);
-    queueMessage(msg);
+    sendMessage(msg);
     delete msg;
 }

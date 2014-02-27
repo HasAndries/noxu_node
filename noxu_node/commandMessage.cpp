@@ -6,10 +6,9 @@ void CommandMessage::init(){
 	control = 0;
 	fromCommander = false;
 	instruction = 0;
-	data = (byte*)malloc(0);
 	dataLength = 0;
-	hops = (byte*)malloc(0);
 	hopCount = 0;
+    hops = (byte*)malloc(0);
 }
 
 //========== PUBLIC ==========
@@ -18,7 +17,7 @@ CommandMessage::CommandMessage(byte _instruction, void *_data, byte byteLength, 
 	init();
 	bufferSize = _bufferSize;
 	instruction = _instruction;
-	realloc(data, sizeof(byte) * byteLength);
+	data = (byte*)malloc(sizeof(byte) * byteLength);
 	memset(data, 0, byteLength);
 	for(byte ct=0;ct<byteLength;ct++)
 		data[ct] = ((byte*)_data)[ct];
@@ -46,7 +45,7 @@ CommandMessage::CommandMessage(byte* buffer, byte _bufferSize){
 				data[ct] = buffer[dataStart + ct];
 		}
 		//hops
-		hops = (byte*)malloc(sizeof(byte) * hopCount);
+		(byte*)realloc(hops, sizeof(byte) * hopCount);
 		for(byte ct=0;ct<hopCount;ct++)
 			hops[ct] = buffer[hopStart + ct];
 	}

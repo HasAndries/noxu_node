@@ -44,6 +44,7 @@ private:
     //---------- outbound ----------
     void queueMessage(CommandMessage *msg);
     void processOutbound();
+    void sendMessage(CommandMessage *msg);
     void sendBuffer(uint64_t pipe, byte buffer[]);
 
     //---------- control ----------
@@ -65,8 +66,8 @@ public:
 
 //---------- instructions ----------
 typedef enum {
-    REQ_NETWORKID = 1, RES_NETWORKID = 101,
-    REQ_PING = 2, RES_PING = 102
+    NETWORKID_REQ = 1, NETWORKID_NEW = 2, NETWORKID_CONFIRM = 3,
+    PING = 4, PING_REPLY = 5
 } instructions;
 
 #endif
