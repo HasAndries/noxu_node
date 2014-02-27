@@ -98,6 +98,7 @@
     <ClInclude Include="RF24_config.h">
       <FileType>CppCode</FileType>
     </ClInclude>
+    <ClInclude Include="trueRandom.h" />
     <ClInclude Include="Visual Micro\.noxu_node.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
@@ -106,13 +107,14 @@
     <ClCompile Include="common.cpp" />
     <ClCompile Include="printf.cpp" />
     <ClCompile Include="RF24.cpp" />
+    <ClCompile Include="trueRandom.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM7" VM.DebugTextMessages.MessageWindow="1" VM.DebugTextMessages.SerialWindow="0" VM.DebugTextMessages.TraceWindow="0" />
+      <UserProperties arduino.upload.port="COM6" VM.DebugTextMessages.MessageWindow="1" VM.DebugTextMessages.SerialWindow="0" VM.DebugTextMessages.TraceWindow="0" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
