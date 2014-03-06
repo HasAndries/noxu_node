@@ -157,10 +157,10 @@ void CommandNetwork::setup(){
     radio->setChannel(channel);
     radio->setCRCLength(RF24_CRC_16);
     radio->setDataRate(datarate);
-    radio->setRetries(0,0);
+    radio->setRetries(100,10);
     radio->setPayloadSize(bufferSize);
     radio->enableDynamicPayloads();
-    radio->setAutoAck(false);
+    radio->setAutoAck(true);
     radio->powerUp();
     //radio->setAutoAck(epBroadcast.pipe, true);
     //radio->printDetails();
