@@ -31,7 +31,7 @@ extern "C" void __cxa_pure_virtual() {;}
 
 //
 //
-void receive(byte type, byte* data, byte dataLength);
+void receive(Message *msg);
 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard\pins_arduino.h" 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
@@ -40,13 +40,13 @@ void receive(byte type, byte* data, byte dataLength);
 #include "C:\projects\noxu_node\noxu_node\RF24.h"
 #include "C:\projects\noxu_node\noxu_node\RF24_config.h"
 #include "C:\projects\noxu_node\noxu_node\base.h"
-#include "C:\projects\noxu_node\noxu_node\commandMessage.cpp"
-#include "C:\projects\noxu_node\noxu_node\commandMessage.h"
-#include "C:\projects\noxu_node\noxu_node\commandNetwork.cpp"
-#include "C:\projects\noxu_node\noxu_node\commandNetwork.h"
 #include "C:\projects\noxu_node\noxu_node\common.cpp"
 #include "C:\projects\noxu_node\noxu_node\common.h"
+#include "C:\projects\noxu_node\noxu_node\message.cpp"
+#include "C:\projects\noxu_node\noxu_node\message.h"
 #include "C:\projects\noxu_node\noxu_node\nRF24L01.h"
+#include "C:\projects\noxu_node\noxu_node\network.cpp"
+#include "C:\projects\noxu_node\noxu_node\network.h"
 #include "C:\projects\noxu_node\noxu_node\printf.cpp"
 #include "C:\projects\noxu_node\noxu_node\printf.h"
 #include "C:\projects\noxu_node\noxu_node\trueRandom.cpp"

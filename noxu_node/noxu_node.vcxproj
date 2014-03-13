@@ -114,7 +114,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM6" VM.DebugTextMessages.MessageWindow="1" VM.DebugTextMessages.SerialWindow="0" VM.DebugTextMessages.TraceWindow="0" />
+      <UserProperties arduino.upload.port="COM7" VM.DebugTextMessages.MessageWindow="1" VM.DebugTextMessages.SerialWindow="0" VM.DebugTextMessages.TraceWindow="0" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

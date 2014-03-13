@@ -1,11 +1,11 @@
-//commandNetwork.h
+//network.h
 /*
 
 Instruction types are at the bottom
 
 */
-#ifndef CommandNetwork_H
-#define CommandNetwork_H
+#ifndef Network_H
+#define Network_H
 
 #include "base.h"
 #include <SPI.h>
@@ -13,12 +13,13 @@ Instruction types are at the bottom
 #include "RF24.h"
 #include "printf.h"
 #include "common.h"
-#include "commandMessage.h"
+#include "message.h"
 
-class CommandNetwork{
+class Network{
 private:
     //---------- properties ----------
-    uint64_t address;
+    uint64_t inboundAddress;
+    uint64_t outboundAddress;
     uint8_t channel;
     rf24_datarate_e datarate;
     byte bufferSize;//max 32
@@ -26,11 +27,12 @@ private:
     unsigned int receiveDuration;
     RF24 *radio;
 
-    uint32_t tempId;
+    uint16_t tempId;
     uint16_t networkId;
+    byte sequence;
     unsigned long lastRun;
     bool listening;
-    void (*receiveHandler)(byte, byte[], byte);
+    void (*receiveHandler)(Message*);
 
     byte** outboundQueue;
     uint64_t outboundQueueLength;
@@ -39,26 +41,26 @@ private:
     void start();
     void stop();
     void processInbound();
-    void receive(CommandMessage *msg);
+    void receive(Message *msg);
 
     //---------- outbound ----------
-    void queueMessage(CommandMessage *msg);
+    void queueMessage(Message *msg);
     void processOutbound();
-    void sendMessage(CommandMessage *msg);
-    void sendBuffer(uint64_t pipe, byte buffer[]);
+    void sendMessage(Message *msg);
+    void sendBuffer(uint64_t address, byte buffer[]);
 
     //---------- control ----------
     void resetDeviceId();
 public:
 	//---------- constructors ----------
-    CommandNetwork(uint64_t address, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, unsigned int maxLoopInterval, unsigned int receiveDuration);
+    Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, unsigned int maxLoopInterval, unsigned int receiveDuration);
 
 	//---------- lifetime ----------
     void setup();
     void loop();
 
 	//---------- inbound ----------
-    void setReceiveHandler(void (*f)(byte, byte*, byte));
+    void setReceiveHandler(void (*f)(Message*));
 
 	//---------- outbound ----------
     void send(byte instruction, void* data, byte byteLength);
@@ -66,8 +68,8 @@ public:
 
 //---------- instructions ----------
 typedef enum {
-    NETWORKID_REQ = 1, NETWORKID_NEW = 2, NETWORKID_CONFIRM = 3,
-    PING = 4, PING_REPLY = 5
+    NETWORKID_REQ = 1, NETWORKID_NEW = 2, NETWORKID_CONFIRM = 3, NETWORKID_INVALID = 4,
+    PULSE = 10, PULSE_CONFIRM = 11
 } instructions;
 
 #endif

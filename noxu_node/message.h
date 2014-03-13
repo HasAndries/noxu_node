@@ -1,11 +1,11 @@
-//commandMessage.h
-#ifndef CommandMessage_H
-#define CommandMessage_H
+//message.h
+#ifndef Message_H
+#define Message_H
 
 #include "base.h"
 #include "common.h"
 
-class CommandMessage{
+class Message{
 private:
     //---------- properties ----------
     bool freed;
@@ -17,25 +17,21 @@ public:
     byte control;
     bool fromCommander;
     byte instruction;
+    byte sequence;
+    uint32_t networkId;
     byte dataLength;
     byte *data;
-    byte hopCount;
-    byte *hops;
 
 	//---------- constructors ----------
-    CommandMessage(byte instruction, void *_data, byte byteLength, byte _bufferSize);
-    CommandMessage(byte *buffer, byte _bufferSize);
-    ~CommandMessage();
+    Message(byte instruction, byte _sequence, uint32_t _networkId, void *_data, byte _dataLength, byte _bufferSize);
+    Message(byte *buffer, byte _bufferSize);
+    ~Message();
 
 	//---------- validation ----------
     bool validate();
 	
 	//---------- output ----------
     byte* buildBuffer();
-	
-	//---------- hops ----------
-    void addHop(byte id);
-    int hopIndex(byte id);
 
 	//---------- print ----------
     void print(char *heading);

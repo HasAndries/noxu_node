@@ -1,30 +1,30 @@
-#include "commandNetwork.h"
+#include "network.h"
 #include "trueRandom.h"
 
 //========== PRIVATE ==========
 //---------- inbound ----------
-void CommandNetwork::start(){
+void Network::start(){
     if (listening) return;
     //printf("<<LISTEN START\n");
     //todo: set channel
-    radio->openReadingPipe(1, address);
+    radio->openReadingPipe(1, inboundAddress);
     radio->startListening();
     listening = true;
 }
-void CommandNetwork::stop(){
+void Network::stop(){
     if (!listening) return;
     //printf("<<LISTEN STOP\n");
     radio->stopListening();
     listening = false;
 }
-void CommandNetwork::processInbound(){
+void Network::processInbound(){
     uint8_t pipe;
     if (radio->available(&pipe)){
         byte* buffer = (byte*)malloc(sizeof(byte) * bufferSize);
         if (radio->read(buffer, bufferSize)) {
             printf("<<INBOUND(%x) -> ", pipe);
             printBytes(buffer, bufferSize);
-            CommandMessage *msg = new CommandMessage(buffer, bufferSize);
+            Message *msg = new Message(buffer, bufferSize);
             if (msg->validate()){
                 receive(msg);
             }
@@ -33,54 +33,46 @@ void CommandNetwork::processInbound(){
         free(buffer);
     }
 }
-void CommandNetwork::receive(CommandMessage *msg) {
-    //msg->print("<<RECEIVE");
+void Network::receive(Message *msg) {
+    msg->print(">>INBOUND<<");
     bool shouldProcess = false;
-    int deviceIndex = findIndex(msg->hops, msg->hopCount, networkId);
-    //printf("((uint16_t*)msg->data)[0] = %d", ((uint16_t*)msg->data)[0]);
 
-    if (msg->fromCommander && deviceIndex == msg->hopCount-1){//last hop is for this deviceId, message is for this node
+    if (msg->fromCommander && networkId == msg->networkId){
+        printf("CONSUME DEVICEID\r\n");
         shouldProcess = true;
     }
-    else if (msg->fromCommander && deviceIndex == -1 && msg->dataLength == sizeof(tempId) && ((uint16_t*)msg->data)[0]==tempId){//message is for this devices' tempId
+    else if (msg->fromCommander && networkId == 0 && msg->dataLength == sizeof(tempId) && ((uint16_t*)msg->data)[0]==tempId){//message is for this devices' tempId
+        printf("CONSUME TEMPID\r\n");
         shouldProcess = true;
-    }
-    else if (msg->fromCommander && deviceIndex != -1 && msg->hopCount > 1){//message is routed back through this node, forward message to next hop
-        queueMessage(msg);
-    }
-    else if (msg->fromCommander){//big problem, maybe send out notification?
-    }
-    else if (!msg->fromCommander){//forward message onto commander
-        //add current node id and send to commander
-        msg->addHop(networkId);
-        sendMessage(msg);
     }
 
     if (shouldProcess){
-        msg->print("<<RECEIVE");
+        sequence = msg->sequence;
         switch (msg->instruction)
         {
         case NETWORKID_NEW:
-            networkId = msg->hops[msg->hopCount-1];
+            networkId = msg->networkId;
             printf(">>NETWORKID_NEW -> %d\r\n", networkId);
-            msg->instruction = NETWORKID_CONFIRM;
-            sendMessage(msg);
+            send(NETWORKID_CONFIRM, NULL, 0);
             break;
-        case PING:
-            printf(">>PING_REPLY -> ");
+        case NETWORKID_INVALID:
+            printf(">>NETWORKID_INVALID -> %d\r\n", msg->networkId);
+            resetDeviceId();
+            break;
+        case PULSE:
+            printf(">>PULSE_CONFIRM -> ");
             printBytes(msg->data, msg->dataLength);
-            msg->instruction = PING_REPLY;
-            sendMessage(msg);
+            send(PULSE_CONFIRM, NULL, 0);
             break;
         default:
             break;
         }
-        (*receiveHandler)(msg->instruction, msg->data, msg->dataLength);
+        (*receiveHandler)(msg);
     }
 }
 
 //---------- outbound ----------
-void CommandNetwork::queueMessage(CommandMessage *msg){
+void Network::queueMessage(Message *msg){
     byte* buffer = msg->buildBuffer();
     //printf(">>QUEUEMESSAGE -> ");
     //printBytes(buffer, bufferSize);
@@ -90,23 +82,23 @@ void CommandNetwork::queueMessage(CommandMessage *msg){
     processOutbound();
 }
 
-void CommandNetwork::processOutbound(){
+void Network::processOutbound(){
     //broadcast
     uint64_t ct =0;
     while(ct < outboundQueueLength){
-        sendBuffer(address, outboundQueue[ct]);
+        sendBuffer(outboundAddress, outboundQueue[ct]);
         free(outboundQueue[ct]);
         ct++;
     }
     outboundQueueLength = 0;
     realloc(outboundQueue, 0);
 }
-void CommandNetwork::sendMessage(CommandMessage *msg){
+void Network::sendMessage(Message *msg){
     byte* buffer = msg->buildBuffer();
-    sendBuffer(address, buffer);
+    sendBuffer(outboundAddress, buffer);
     free(buffer);
 }
-void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
+void Network::sendBuffer(uint64_t address, byte buffer[]) {
     bool wasListening = listening;
     if (listening)
         stop();
@@ -116,7 +108,7 @@ void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
     printf(") -> ");
     printBytes(buffer, bufferSize);
 
-    radio->openWritingPipe(pipe);
+    radio->openWritingPipe(address);
     radio->write(buffer, bufferSize);
 
     if (wasListening)
@@ -124,16 +116,18 @@ void CommandNetwork::sendBuffer(uint64_t pipe, byte buffer[]) {
 }
 
 //---------- control ----------
-void CommandNetwork::resetDeviceId(){
+void Network::resetDeviceId(){
     networkId = 0;
     //tempId = random(10000, 65535);
-    tempId = TrueRandom.random(10000, 65535);
+    tempId = TrueRandom.random();
+    sequence = 0;
 }
 
 //========== PUBLIC ==========
 //---------- constructors ----------
-CommandNetwork::CommandNetwork(uint64_t _address, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, unsigned int _maxLoopInterval, unsigned int _receiveDuration){
-    address = _address;
+Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, unsigned int _maxLoopInterval, unsigned int _receiveDuration){
+    inboundAddress = _inboundAddress;
+    outboundAddress = _outboundAddress;
     channel = _channel;
     datarate = _datarate;
     bufferSize = _bufferSize;
@@ -144,12 +138,12 @@ CommandNetwork::CommandNetwork(uint64_t _address, uint8_t _channel, rf24_datarat
 }
 
 //---------- lifetime ----------
-void CommandNetwork::setup(){
+void Network::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
     //randomSeed((analogRead(0)+analogRead(1))/2);
     resetDeviceId();
-    printf("TempId: %ld\r\n", tempId);
+    printf("TempId: %u\r\n", tempId);
 
     radio = new RF24(9, 10);
     radio->begin();
@@ -157,7 +151,7 @@ void CommandNetwork::setup(){
     radio->setChannel(channel);
     radio->setCRCLength(RF24_CRC_16);
     radio->setDataRate(datarate);
-    radio->setRetries(100,10);
+    radio->setRetries(10,15);
     radio->setPayloadSize(bufferSize);
     radio->enableDynamicPayloads();
     radio->setAutoAck(true);
@@ -166,7 +160,7 @@ void CommandNetwork::setup(){
     //radio->printDetails();
     printf("\r\n=====================\r\n");
 }
-void CommandNetwork::loop(){
+void Network::loop(){
     bool shouldRun = true;
     unsigned long now = millis();
     unsigned int runDiff = diff(lastRun, now);
@@ -187,15 +181,13 @@ void CommandNetwork::loop(){
 }
 
 //---------- inbound ----------
-void CommandNetwork::setReceiveHandler(void (*f)(byte, byte*, byte)){
+void Network::setReceiveHandler(void (*f)(Message*)){
     receiveHandler = *f;
 }
 
 //---------- outbound ----------
-void CommandNetwork::send(byte instruction, void* data, byte byteLength){
-    CommandMessage *msg = new CommandMessage(instruction, data, byteLength, bufferSize);
-    if (networkId != 0)
-        msg->addHop(networkId);
+void Network::send(byte instruction, void* data, byte byteLength){
+    Message *msg = new Message(instruction, sequence, networkId, data, byteLength, bufferSize);
     sendMessage(msg);
     delete msg;
 }
