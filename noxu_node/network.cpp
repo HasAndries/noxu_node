@@ -34,7 +34,6 @@ void Network::processInbound(){
     }
 }
 void Network::receive(Message *msg) {
-    msg->print(">>INBOUND<<");
     bool shouldProcess = false;
 
     if (msg->fromCommander && networkId == msg->networkId){
@@ -47,6 +46,7 @@ void Network::receive(Message *msg) {
     }
 
     if (shouldProcess){
+        msg->print(">>INBOUND<<");
         sequence = msg->sequence;
         switch (msg->instruction)
         {
