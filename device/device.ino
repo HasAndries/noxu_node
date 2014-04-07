@@ -1,9 +1,9 @@
 #include <EEPROM.h>
 #include <SPI.h>
 
-#include "printf.h"
-#include "common.h"
-#include "network.h"
+#include <printf.h>
+#include <common.h>
+#include <network.h>
 
 //---------- settings ----------
 const byte bufferSize = 32;//max 32
