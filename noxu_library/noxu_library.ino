@@ -1,3 +1,6 @@
+#include <EEPROM.h>
+#include <SPI.h>
+
 void setup()
 {
 

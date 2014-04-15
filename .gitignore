@@ -3,6 +3,6 @@ Visual\ Micro/
 *.sdf
 *.opensdf
 *.suo
-.vcxproj.user
+**/*.vcxproj.user
 ~AutoRecover.*
 npm-debug.log

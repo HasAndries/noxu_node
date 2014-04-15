@@ -21,5 +21,52 @@
     <ClInclude Include="Visual Micro\.noxu_library.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="message.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="network.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nRF24L01.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="printf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RF24.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RF24_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trueRandom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="message.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="printf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RF24.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trueRandom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -29,6 +29,25 @@ void loop() {
 }
 
 void receive(Message *msg){
+    switch (msg->instruction)
+        {
+        case NETWORKID_NEW:
+            networkId = msg->networkId;
+            printf(">>NETWORKID_NEW -> %d\r\n", networkId);
+            send(NETWORKID_CONFIRM, NULL, 0);
+            break;
+        case NETWORKID_INVALID:
+            printf(">>NETWORKID_INVALID -> %d\r\n", msg->networkId);
+            resetDeviceId();
+            break;
+        case PULSE:
+            printf(">>PULSE_CONFIRM -> ");
+            printBytes(msg->data, msg->dataLength);
+            send(PULSE_CONFIRM, NULL, 0);
+            break;
+        default:
+            break;
+        }
     printf("<<DATA(%d) ", msg->instruction);
     printBytes(msg->data, msg->dataLength);
 }
