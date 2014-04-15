@@ -1,5 +1,4 @@
 #include "network.h"
-#include "trueRandom.h"
 
 //========== PRIVATE ==========
 //---------- inbound ----------
@@ -40,7 +39,7 @@ void Network::receive(Message *msg) {
         printf("CONSUME DEVICEID\r\n");
         shouldProcess = true;
     }
-    else if (msg->fromCommander && networkId == 0 && msg->dataLength == sizeof(tempId) && ((uint16_t*)msg->data)[0]==tempId){//message is for this devices' tempId
+    else if (msg->fromCommander && networkId == 0 && msg->dataLength == sizeof(deviceId) && ((uint16_t*)msg->data)[0]==*deviceId){//message is for this devices' tempId
         printf("CONSUME TEMPID\r\n");
         shouldProcess = true;
     }
@@ -57,7 +56,7 @@ void Network::receive(Message *msg) {
             break;
         case NETWORKID_INVALID:
             printf(">>NETWORKID_INVALID -> %d\r\n", msg->networkId);
-            resetDeviceId();
+            resetNetworkId();
             break;
         case PULSE:
             printf(">>PULSE_CONFIRM -> ");
@@ -116,34 +115,33 @@ void Network::sendBuffer(uint64_t address, byte buffer[]) {
 }
 
 //---------- control ----------
-void Network::resetDeviceId(){
+void Network::resetNetworkId(){
     networkId = 0;
-    //tempId = random(10000, 65535);
-    tempId = TrueRandom.random();
     sequence = 0;
 }
 
 //========== PUBLIC ==========
 //---------- constructors ----------
-Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, unsigned int _maxLoopInterval, unsigned int _receiveDuration){
+Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, uint16_t* _deviceId){
     inboundAddress = _inboundAddress;
     outboundAddress = _outboundAddress;
     channel = _channel;
     datarate = _datarate;
     bufferSize = _bufferSize;
-    maxLoopInterval = _maxLoopInterval;
-    receiveDuration = _receiveDuration;
+    deviceId = _deviceId;
     outboundQueue = (byte**)malloc(0);
     outboundQueueLength = 0;
+
+    maxLoopInterval = 1000;
+    receiveDuration = 1000;
 }
 
 //---------- lifetime ----------
 void Network::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
-    //randomSeed((analogRead(0)+analogRead(1))/2);
-    resetDeviceId();
-    printf("TempId: %u\r\n", tempId);
+    resetNetworkId();
+    printf("DeviceId: %u\r\n", deviceId);
 
     radio = new RF24(9, 10);
     radio->begin();
@@ -174,7 +172,7 @@ void Network::loop(){
         }
         stop();
         if (networkId == 0){
-            send(NETWORKID_REQ, &tempId, sizeof(tempId));
+            send(NETWORKID_REQ, deviceId, sizeof(deviceId));
         }
         //processOutbound();
     }

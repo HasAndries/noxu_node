@@ -27,7 +27,7 @@ private:
     unsigned int receiveDuration;
     RF24 *radio;
 
-    uint16_t tempId;
+    uint16_t* deviceId;
     uint16_t networkId;
     byte sequence;
     unsigned long lastRun;
@@ -50,10 +50,10 @@ private:
     void sendBuffer(uint64_t address, byte buffer[]);
 
     //---------- control ----------
-    void resetDeviceId();
+    void resetNetworkId();
 public:
 	//---------- constructors ----------
-    Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, unsigned int maxLoopInterval, unsigned int receiveDuration);
+    Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, uint16_t* _deviceId);
 
 	//---------- lifetime ----------
     void setup();

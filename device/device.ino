@@ -4,6 +4,7 @@
 #include <printf.h>
 #include <common.h>
 #include <network.h>
+#include "trueRandom.h"
 
 //---------- settings ----------
 const byte bufferSize = 32;//max 32
@@ -14,12 +15,15 @@ const uint64_t outboundAddress = 0x00F0F0F0D2LL;
 const uint8_t channel = 0x4c;
 const rf24_datarate_e datarate = RF24_1MBPS;
 
+uint16_t deviceId;
+
 Network *network;
 
 void setup() {
     Serial.begin(57600);
     printf_begin();
-    network = new Network(inboundAddress, outboundAddress, channel, datarate, bufferSize, maxLoopInterval, receiveDuration);
+    deviceId = TrueRandom.random();
+    network = new Network(inboundAddress, outboundAddress, channel, datarate, bufferSize, &deviceId);
     network->setup();
     network->setReceiveHandler(receive);
 }
@@ -32,18 +36,11 @@ void receive(Message *msg){
     switch (msg->instruction)
         {
         case NETWORKID_NEW:
-            networkId = msg->networkId;
-            printf(">>NETWORKID_NEW -> %d\r\n", networkId);
-            send(NETWORKID_CONFIRM, NULL, 0);
             break;
         case NETWORKID_INVALID:
-            printf(">>NETWORKID_INVALID -> %d\r\n", msg->networkId);
-            resetDeviceId();
+            deviceId = TrueRandom.random();
             break;
         case PULSE:
-            printf(">>PULSE_CONFIRM -> ");
-            printBytes(msg->data, msg->dataLength);
-            send(PULSE_CONFIRM, NULL, 0);
             break;
         default:
             break;
