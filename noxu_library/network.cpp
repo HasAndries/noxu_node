@@ -36,11 +36,11 @@ void Network::receive(Message *msg) {
     bool shouldProcess = false;
 
     if (msg->fromCommander && networkId == msg->networkId){
-        printf("CONSUME DEVICEID\r\n");
+        printf("CONSUME NetworkId\r\n");
         shouldProcess = true;
     }
     else if (msg->fromCommander && networkId == 0 && msg->dataLength == sizeof(deviceId) && ((uint16_t*)msg->data)[0]==*deviceId){//message is for this devices' tempId
-        printf("CONSUME TEMPID\r\n");
+        printf("CONSUME DeviceId\r\n");
         shouldProcess = true;
     }
 
