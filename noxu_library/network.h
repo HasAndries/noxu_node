@@ -27,10 +27,13 @@ private:
     unsigned int receiveDuration;
     RF24 *radio;
 
-    uint16_t* deviceId;
     uint16_t networkId;
-    byte sequence;
-    unsigned long lastRun;
+    uint16_t deviceId;
+    uint16_t* hardwareId;
+    byte transactionId;
+    unsigned long sleepWakeMillis;
+    byte* sleepMessage;
+    unsigned long lastNetworkRun;
     bool listening;
     void (*receiveHandler)(Message*);
 
@@ -50,10 +53,12 @@ private:
     void sendBuffer(uint64_t address, byte buffer[]);
 
     //---------- control ----------
-    void resetNetworkId();
+    void resetNetwork();
+    void sleep(byte seconds, Message *msg);
+    void wake();
 public:
 	//---------- constructors ----------
-    Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, uint16_t* _deviceId);
+    Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t channel, rf24_datarate_e datarate, byte _bufferSize, uint16_t* _hardwareIdId);
 
 	//---------- lifetime ----------
     void setup();
@@ -68,8 +73,8 @@ public:
 
 //---------- instructions ----------
 typedef enum {
-    NETWORKID_REQ = 1, NETWORKID_NEW = 2, NETWORKID_CONFIRM = 3, NETWORKID_INVALID = 4,
-    PULSE = 10, PULSE_CONFIRM = 11
+    NETWORK_CONNECT = 1, NETWORK_NEW = 2, NETWORK_CONFIRM = 3, NETWORK_INVALID = 4,
+    PING = 10, PING_CONFIRM = 11
 } instructions;
 
 #endif

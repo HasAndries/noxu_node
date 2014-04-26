@@ -15,15 +15,15 @@ const uint64_t outboundAddress = 0x00F0F0F0D2LL;
 const uint8_t channel = 0x4c;
 const rf24_datarate_e datarate = RF24_1MBPS;
 
-uint16_t deviceId;
+uint16_t hardwareId;
 
 Network *network;
 
 void setup() {
     Serial.begin(57600);
     printf_begin();
-    deviceId = TrueRandom.random();
-    network = new Network(inboundAddress, outboundAddress, channel, datarate, bufferSize, &deviceId);
+    hardwareId = TrueRandom.random();
+    network = new Network(inboundAddress, outboundAddress, channel, datarate, bufferSize, &hardwareId);
     network->setup();
     network->setReceiveHandler(receive);
 }
@@ -35,12 +35,12 @@ void loop() {
 void receive(Message *msg){
     switch (msg->instruction)
         {
-        case NETWORKID_NEW:
+        case NETWORK_NEW:
             break;
-        case NETWORKID_INVALID:
-            deviceId = TrueRandom.random();
+        case NETWORK_INVALID:
+            hardwareId = TrueRandom.random();
             break;
-        case PULSE:
+        case PING:
             break;
         default:
             break;

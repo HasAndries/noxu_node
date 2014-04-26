@@ -35,38 +35,43 @@ void Network::processInbound(){
 void Network::receive(Message *msg) {
     bool shouldProcess = false;
 
-    if (msg->fromCommander && networkId == msg->networkId){
-        printf("CONSUME NetworkId\r\n");
+    if (msg->fromCommander && networkId == msg->networkId && deviceId == msg->deviceId){
+        printf("CONSUME NetworkId/DeviceId\r\n");
         shouldProcess = true;
     }
-    else if (msg->fromCommander && networkId == 0 && msg->dataLength == sizeof(deviceId) && ((uint16_t*)msg->data)[0]==*deviceId){//message is for this devices' tempId
-        printf("CONSUME DeviceId\r\n");
+    else if (msg->fromCommander && networkId == 0 && deviceId == 0 && msg->dataLength == sizeof(hardwareId) && ((uint16_t*)msg->data)[0]==*hardwareId){//message is for this hardwareId
+        printf("CONSUME HardwareId\r\n");
         shouldProcess = true;
     }
-
     if (shouldProcess){
         msg->print(">>INBOUND<<");
-        sequence = msg->sequence;
+        byte expectedTransactionId = transactionId+1;
+        transactionId = msg->transactionId;
+        if (expectedTransactionId != transactionId){
+            printf("ERROR Expected TransactionId %d and got %d", expectedTransactionId, transactionId);
+        }
         switch (msg->instruction)
         {
-        case NETWORKID_NEW:
+        case NETWORK_NEW:
             networkId = msg->networkId;
-            printf(">>NETWORKID_NEW -> %d\r\n", networkId);
-            send(NETWORKID_CONFIRM, NULL, 0);
+            networkId = msg->deviceId;
+            printf(">>NETWORK_NEW -> %d/%d\r\n", networkId, deviceId);
+            send(NETWORK_CONFIRM, NULL, 0);
             break;
-        case NETWORKID_INVALID:
-            printf(">>NETWORKID_INVALID -> %d\r\n", msg->networkId);
-            resetNetworkId();
+        case NETWORK_INVALID:
+            printf(">>NETWORK_INVALID -> %d\r\n", msg->networkId);
+            resetNetwork();
             break;
-        case PULSE:
-            printf(">>PULSE_CONFIRM -> ");
+        case PING:
+            printf(">>PING_CONFIRM -> ");
             printBytes(msg->data, msg->dataLength);
-            send(PULSE_CONFIRM, NULL, 0);
+            send(PING_CONFIRM, NULL, 0);
             break;
         default:
             break;
         }
-        (*receiveHandler)(msg);
+        if (msg->sleep > 0) sleep(msg->sleep, msg);
+        else (*receiveHandler)(msg);
     }
 }
 
@@ -115,20 +120,31 @@ void Network::sendBuffer(uint64_t address, byte buffer[]) {
 }
 
 //---------- control ----------
-void Network::resetNetworkId(){
+void Network::resetNetwork(){
     networkId = 0;
-    sequence = 0;
+    deviceId = 0;
+    transactionId = 0;
 }
-
+void Network::sleep(byte seconds, Message *msg){
+    sleepWakeMillis = millis() + seconds*1000;
+    sleepMessage = msg->buildBuffer();
+}
+void Network::wake(){
+    sleepWakeMillis = 0;
+    Message *msg = new Message(sleepMessage, bufferSize);
+    (*receiveHandler)(msg);
+    delete msg;
+    free(sleepMessage);
+}
 //========== PUBLIC ==========
 //---------- constructors ----------
-Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, uint16_t* _deviceId){
+Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _channel, rf24_datarate_e _datarate, byte _bufferSize, uint16_t* _hardwareId){
     inboundAddress = _inboundAddress;
     outboundAddress = _outboundAddress;
     channel = _channel;
     datarate = _datarate;
     bufferSize = _bufferSize;
-    deviceId = _deviceId;
+    hardwareId = _hardwareId;
     outboundQueue = (byte**)malloc(0);
     outboundQueueLength = 0;
 
@@ -140,8 +156,8 @@ Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _c
 void Network::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
-    resetNetworkId();
-    printf("DeviceId: %u\r\n", deviceId);
+    resetNetwork();
+    printf("HardwareId: %lu\r\n", hardwareId);
 
     radio = new RF24(9, 10);
     radio->begin();
@@ -159,22 +175,23 @@ void Network::setup(){
     printf("\r\n=====================\r\n");
 }
 void Network::loop(){
-    bool shouldRun = true;
     unsigned long now = millis();
-    unsigned int runDiff = diff(lastRun, now);
-    if (runDiff < maxLoopInterval) shouldRun = false;
-    if (networkId == 0) shouldRun = true;
-    if (shouldRun){//run that shit!
-        lastRun = now;
+    if (sleepWakeMillis != 0){ //sleeping
+        if (now-sleepWakeMillis < 0) return; //still sleeping
+        wake();
+    }
+
+    bool runNetwork = true;
+    if (diff(lastNetworkRun, now) >= maxLoopInterval){
+        lastNetworkRun = now;
         start();
         while(diff(now, millis()) < receiveDuration){
             processInbound();
         }
         stop();
         if (networkId == 0){
-            send(NETWORKID_REQ, deviceId, sizeof(deviceId));
+            send(NETWORK_CONNECT, hardwareId, sizeof(deviceId));
         }
-        //processOutbound();
     }
 }
 
@@ -185,7 +202,7 @@ void Network::setReceiveHandler(void (*f)(Message*)){
 
 //---------- outbound ----------
 void Network::send(byte instruction, void* data, byte byteLength){
-    Message *msg = new Message(instruction, sequence, networkId, data, byteLength, bufferSize);
+    Message *msg = new Message(networkId, deviceId, transactionId, instruction, data, byteLength, bufferSize);
     sendMessage(msg);
     delete msg;
 }
