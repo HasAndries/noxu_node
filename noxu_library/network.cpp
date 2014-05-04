@@ -48,7 +48,7 @@ void Network::receive(Message *msg) {
         byte expectedTransactionId = transactionId+1;
         transactionId = msg->transactionId;
         if (expectedTransactionId != transactionId){
-            printf("ERROR Expected TransactionId %d and got %d", expectedTransactionId, transactionId);
+            printf("ERROR Expected TransactionId %d and got %d\r\n", expectedTransactionId, transactionId);
         }
         switch (msg->instruction)
         {
@@ -157,7 +157,7 @@ void Network::setup(){
     printf("\r\n====== RFnode ======\r\n");
     listening = false;
     resetNetwork();
-    printf("HardwareId: %lu\r\n", hardwareId);
+    printf("HardwareId: %u\r\n", hardwareId);
 
     radio = new RF24(9, 10);
     radio->begin();

@@ -20,7 +20,8 @@ public:
     byte transactionId;
     byte instruction;
     byte control;
-    bool fromCommander;
+    bool fromCommander;//control[0]
+    bool isRelay;//control[1]
     byte sleep;
     byte dataLength;
     byte *data;

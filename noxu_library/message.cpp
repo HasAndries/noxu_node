@@ -43,7 +43,8 @@ Message::Message(byte* _buffer, byte _bufferSize){
     transactionId = _buffer[5];
     instruction = _buffer[6];
     control = _buffer[7];
-    fromCommander = isBitSet(control, 0);    
+    fromCommander = isBitSet(control, 0);
+    isRelay = isBitSet(control, 1);
     sleep = _buffer[8];
     dataLength = _buffer[9];
     byte dataStart = 10;
@@ -76,6 +77,7 @@ byte* Message::buildBuffer(){
     buffer[5] = transactionId;
     buffer[6] = instruction;
     buffer[7] = setBit(buffer[7], 0, fromCommander);//fromCommander
+    buffer[7] = setBit(buffer[7], 1, isRelay);//isRelay
     buffer[8] = sleep;    
     buffer[9] = dataLength;
     byte dataStart = 10;
@@ -90,7 +92,6 @@ byte* Message::buildBuffer(){
 //---------- print ----------
 void Message::print(char *heading){
     printf("===== %s(Message) =====\r\n", heading);
-    //printf("version:%d transactionId:%d control:%d instruction:%d networkId:%lu deviceId:%lu dataLength:%d\r\n", version, transactionId, control, instruction, networkId, deviceId, dataLength);
     printf("version:%d networkId:%lu deviceId:%lu transactionId:%d instruction:%d control:%d sleep:%d dataLength:%d\r\n",
         version, networkId, deviceId, transactionId, instruction, control, sleep, dataLength);
 
