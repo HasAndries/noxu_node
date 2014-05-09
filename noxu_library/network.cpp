@@ -33,28 +33,30 @@ void Network::processInbound(){
     }
 }
 void Network::receive(Message *msg) {
-    bool shouldProcess = false;
+    bool processDeviceId = false, processHardwareId = false;
 
     if (msg->fromCommander && networkId == msg->networkId && deviceId == msg->deviceId){
         printf("CONSUME NetworkId/DeviceId\r\n");
-        shouldProcess = true;
+        processDeviceId = true;
     }
     else if (msg->fromCommander && networkId == 0 && deviceId == 0 && msg->dataLength == sizeof(hardwareId) && ((uint16_t*)msg->data)[0]==*hardwareId){//message is for this hardwareId
         printf("CONSUME HardwareId\r\n");
-        shouldProcess = true;
+        processHardwareId = true;
     }
-    if (shouldProcess){
+    if (processDeviceId || processHardwareId){
         msg->print(">>INBOUND<<");
-        byte expectedTransactionId = transactionId+1;
-        transactionId = msg->transactionId;
-        if (expectedTransactionId != transactionId){
-            printf("ERROR Expected TransactionId %d and got %d\r\n", expectedTransactionId, transactionId);
+        if (processDeviceId){
+            byte expectedTransactionId = transactionId+1;
+            transactionId = msg->transactionId;
+            if (expectedTransactionId != transactionId){
+                printf("ERROR Expected TransactionId %d and got %d\r\n", expectedTransactionId, transactionId);
+            }
         }
         switch (msg->instruction)
         {
         case NETWORK_NEW:
             networkId = msg->networkId;
-            networkId = msg->deviceId;
+            deviceId = msg->deviceId;
             printf(">>NETWORK_NEW -> %d/%d\r\n", networkId, deviceId);
             send(NETWORK_CONFIRM, NULL, 0);
             break;
@@ -123,14 +125,20 @@ void Network::sendBuffer(uint64_t address, byte buffer[]) {
 void Network::resetNetwork(){
     networkId = 0;
     deviceId = 0;
-    transactionId = 0;
+    transactionId = 255;
 }
 void Network::sleep(byte seconds, Message *msg){
-    sleepWakeMillis = millis() + seconds*1000;
+    unsigned long now = millis();
+    sleepWakeMillis = seconds*1000 + now;
+    if (sleepWakeMillis == 0) sleepWakeMillis = 1;
+    sleepOverflow = sleepWakeMillis < now;
     sleepMessage = msg->buildBuffer();
+    printf("SLEEP %lu -> %lu\r\n", millis(), sleepWakeMillis);
 }
 void Network::wake(){
+    printf("WAKE %d\r\n", millis());
     sleepWakeMillis = 0;
+    sleepOverflow = false;
     Message *msg = new Message(sleepMessage, bufferSize);
     (*receiveHandler)(msg);
     delete msg;
@@ -177,7 +185,8 @@ void Network::setup(){
 void Network::loop(){
     unsigned long now = millis();
     if (sleepWakeMillis != 0){ //sleeping
-        if (now-sleepWakeMillis < 0) return; //still sleeping
+        if (sleepOverflow && now < sleepWakeMillis) sleepOverflow = false; //overflow is done
+        if (!sleepOverflow && sleepWakeMillis > now) return; //still sleeping
         wake();
     }
 

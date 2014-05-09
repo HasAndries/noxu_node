@@ -35,7 +35,8 @@ void loop() {
 void receive(Message *msg){
     switch (msg->instruction)
         {
-        case NETWORK_NEW:
+        case WAKE:
+            network->send(WAKE, NULL, 0);
             break;
         case NETWORK_INVALID:
             hardwareId = TrueRandom.random();
@@ -45,6 +46,6 @@ void receive(Message *msg){
         default:
             break;
         }
-    printf("<<DATA(%d) ", msg->instruction);
-    printBytes(msg->data, msg->dataLength);
+    //printf("<<DATA(%d) ", msg->instruction);
+    //printBytes(msg->data, msg->dataLength);
 }

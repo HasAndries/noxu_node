@@ -92,7 +92,7 @@ byte* Message::buildBuffer(){
 //---------- print ----------
 void Message::print(char *heading){
     printf("===== %s(Message) =====\r\n", heading);
-    printf("version:%d networkId:%lu deviceId:%lu transactionId:%d instruction:%d control:%d sleep:%d dataLength:%d\r\n",
+    printf("version:%d networkId:%u deviceId:%u transactionId:%d instruction:%d control:%d sleep:%d dataLength:%d\r\n",
         version, networkId, deviceId, transactionId, instruction, control, sleep, dataLength);
 
     printf("data:");
