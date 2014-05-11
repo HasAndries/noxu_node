@@ -136,7 +136,7 @@ void Network::sleep(byte seconds, Message *msg){
     printf("SLEEP %lu -> %lu\r\n", millis(), sleepWakeMillis);
 }
 void Network::wake(){
-    printf("WAKE %d\r\n", millis());
+    printf("WAKE %lu\r\n", millis());
     sleepWakeMillis = 0;
     sleepOverflow = false;
     Message *msg = new Message(sleepMessage, bufferSize);
@@ -158,6 +158,9 @@ Network::Network(uint64_t _inboundAddress, uint64_t _outboundAddress, uint8_t _c
 
     maxLoopInterval = 1000;
     receiveDuration = 1000;
+
+    sleepWakeMillis = 0;
+    sleepOverflow = false;
 }
 
 //---------- lifetime ----------

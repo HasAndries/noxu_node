@@ -37,12 +37,6 @@ void receive(Message *msg){
         {
         case WAKE:
             network->send(WAKE, NULL, 0);
-            break;
-        case NETWORK_INVALID:
-            hardwareId = TrueRandom.random();
-            break;
-        case PING:
-            break;
         default:
             break;
         }
